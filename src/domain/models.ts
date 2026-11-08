@@ -128,6 +128,51 @@ export interface HabitCheckIn {
   updatedAt: string
 }
 
+export interface NutritionEvaluation {
+  id: string
+  patientId: string
+  evaluatedOn: string
+  consultationReason: string
+  healthHistory: string
+  reportedAllergies: string
+  reportedMedications: string
+  previousNutritionCare: string
+  foodRestrictionsAndPreferences: string
+  usualMealSchedule: string
+  usualMealsCount: string
+  mealEnvironment: string
+  foodAccess: string
+  hydration: string
+  reportedDifficulties: string
+  professionalObservations: string
+  authorLabel: string
+  submissionKey: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DietaryRecallMeal {
+  id: string
+  name: string
+  time: string
+  foods: FoodDiaryItem[]
+  context: string
+  notes: string
+}
+
+export interface DietaryRecall24h {
+  id: string
+  evaluationId: string
+  patientId: string
+  recallDate: string
+  meals: DietaryRecallMeal[]
+  complementaryNotes: string
+  authorLabel: string
+  submissionKey: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NutritionWorkspace {
   patients: PatientAdministrative[]
   clinicalProfiles: PatientClinical[]
@@ -136,6 +181,8 @@ export interface NutritionWorkspace {
   foodDiaryEntries: FoodDiaryEntry[]
   habitGoals: HabitGoal[]
   habitCheckIns: HabitCheckIn[]
+  nutritionEvaluations: NutritionEvaluation[]
+  dietaryRecalls24h: DietaryRecall24h[]
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
@@ -144,3 +191,5 @@ export type AssessmentInput = Omit<Assessment, 'id' | 'bmi' | 'createdAt'>
 export type FoodDiaryEntryInput = Omit<FoodDiaryEntry, 'id' | 'source' | 'createdAt' | 'updatedAt'>
 export type HabitGoalInput = Omit<HabitGoal, 'id' | 'createdAt' | 'updatedAt'>
 export type HabitCheckInInput = Omit<HabitCheckIn, 'id' | 'source' | 'createdAt' | 'updatedAt'>
+export type NutritionEvaluationInput = Omit<NutritionEvaluation, 'id' | 'authorLabel' | 'createdAt' | 'updatedAt'>
+export type DietaryRecall24hInput = Omit<DietaryRecall24h, 'id' | 'authorLabel' | 'createdAt' | 'updatedAt'>

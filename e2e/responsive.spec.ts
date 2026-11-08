@@ -45,3 +45,27 @@ test('mantém diário e hábitos utilizáveis no celular', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Nova meta' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
+
+test('cria avaliação estruturada e navega pelas fontes clínicas', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/pacientes/demo-patient-rafael')
+  await expect(page.getByRole('heading', { name: 'Avaliação nutricional completa' })).toBeVisible()
+  await page.getByRole('button', { name: 'Iniciar avaliação' }).click()
+  await page.getByLabel('Motivo da consulta opcional').fill('Motivo exclusivamente fictício para teste')
+  await page.getByRole('button', { name: 'Salvar avaliação' }).click()
+  await expect(page.getByText('Motivo exclusivamente fictício para teste')).toBeVisible()
+  await page.getByRole('tab', { name: 'Evolução' }).click()
+  await expect(page.getByText('Comparação descritiva, sem classificar melhora ou piora.')).toBeVisible()
+  await page.locator('.evaluation-module').getByLabel('Período').selectOption('90')
+  await expect(page.locator('.evolution-timeline')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})
+
+test('exibe recordatório separado do diário em viewport móvel', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/pacientes/demo-patient-ana')
+  await page.getByRole('tab', { name: 'Recordatório 24h' }).click()
+  await expect(page.getByText('Registro retrospectivo, separado do Diário Alimentar contínuo.')).toBeVisible()
+  await expect(page.getByText('Pão com ovo — 1 unidade relatada · Café com leite — 1 xícara relatada')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})

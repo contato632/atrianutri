@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assessmentSchema, foodDiaryEntrySchema, habitCheckInSchema, habitGoalSchema, patientSchema } from './validation'
+import { assessmentSchema, dietaryRecall24hSchema, foodDiaryEntrySchema, habitCheckInSchema, habitGoalSchema, nutritionEvaluationSchema, patientSchema } from './validation'
 
 describe('patientSchema', () => {
   it('aceita cadastro administrativo válido', () => {
@@ -35,5 +35,16 @@ describe('assessmentSchema', () => {
   it('mantém medidas opcionais e valida os limites principais', () => {
     expect(assessmentSchema.safeParse({ patientId: 'patient-1', assessedAt: '2026-11-08', weightKg: 72.4, heightCm: 168, notes: '' }).success).toBe(true)
     expect(assessmentSchema.safeParse({ patientId: 'patient-1', assessedAt: '2026-11-08', weightKg: 72.4, heightCm: 500, notes: '' }).success).toBe(false)
+  })
+})
+
+describe('avaliação completa e recordatório de 24 horas', () => {
+  it('aceita campos clínicos opcionais sem inferências', () => {
+    expect(nutritionEvaluationSchema.safeParse({ patientId:'patient-1',evaluatedOn:'2026-11-08',consultationReason:'',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000001' }).success).toBe(true)
+  })
+  it('valida refeição, horário e alimento do recordatório', () => {
+    const base={evaluationId:'evaluation-1',patientId:'patient-1',recallDate:'2026-11-08',complementaryNotes:'',submissionKey:'50000000-0000-4000-8000-000000000002'}
+    expect(dietaryRecall24hSchema.safeParse({...base,meals:[{id:'meal-1',name:'Almoço',time:'12:30',foods:[{id:'food-1',name:'Preparação relatada',quantity:''}],context:'',notes:''}]}).success).toBe(true)
+    expect(dietaryRecall24hSchema.safeParse({...base,meals:[]}).success).toBe(false)
   })
 })

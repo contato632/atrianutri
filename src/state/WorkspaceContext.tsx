@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AssessmentInput, ClinicalProfileInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionWorkspace, PatientInput } from '../domain/models'
+import type { AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -14,10 +14,12 @@ type WorkspaceContextValue = {
   saveFoodDiaryEntry: (input: FoodDiaryEntryInput, entry?: FoodDiaryEntry) => Promise<FoodDiaryEntry>
   saveHabitGoal: (input: HabitGoalInput, goal?: HabitGoal) => Promise<HabitGoal>
   saveHabitCheckIn: (input: HabitCheckInInput, checkIn?: HabitCheckIn) => Promise<HabitCheckIn>
+  saveNutritionEvaluation: (input: NutritionEvaluationInput, evaluation?: NutritionEvaluation) => Promise<NutritionEvaluation>
+  saveDietaryRecall24h: (input: DietaryRecall24hInput, recall?: DietaryRecall24h) => Promise<DietaryRecall24h>
   refresh: () => Promise<void>
 }
 
-const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [] }
+const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [] }
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const defaultDemoRepository = new DemoNutritionRepository()
 
@@ -80,6 +82,14 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
       const saved = await repository.saveHabitCheckIn(input, checkIn?.id, checkIn?.updatedAt)
       await refresh()
       return saved
+    },
+    async saveNutritionEvaluation(input, evaluation) {
+      const saved = await repository.saveNutritionEvaluation(input, evaluation?.id, evaluation?.updatedAt)
+      await refresh(); return saved
+    },
+    async saveDietaryRecall24h(input, recall) {
+      const saved = await repository.saveDietaryRecall24h(input, recall?.id, recall?.updatedAt)
+      await refresh(); return saved
     },
   }), [workspace, loading, error, repository])
 

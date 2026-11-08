@@ -5,6 +5,7 @@ import { LoadingState } from '../components/LoadingState'
 import { Modal } from '../components/Modal'
 import { AnamnesisForm } from '../components/AnamnesisForm'
 import { FoodDiaryPanel } from '../components/FoodDiaryPanel'
+import { NutritionEvaluationPanel } from '../components/NutritionEvaluationPanel'
 import { PatientForm } from '../components/PatientForm'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
@@ -64,6 +65,7 @@ export function PatientDetailPage() {
         </section>
       </div>
 
+      <NutritionEvaluationPanel patientId={patient.id} />
       <FoodDiaryPanel patientId={patient.id} />
 
       {editingClinical && <Modal title="Anamnese nutricional" eyebrow="Registro clínico restrito" onClose={() => setEditingClinical(false)} size="large">

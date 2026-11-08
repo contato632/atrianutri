@@ -75,3 +75,9 @@ describe('SupabaseNutritionRepository diary and habits', () => {
     await expect(repository.saveHabitCheckIn({ patientId: 'patient-1', goalId: 'goal-1', recordedOn: '2026-11-08', progress: 'difficulty', notes: '', difficulties: 'Turno alterado', nextStep: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '30000000-0000-4000-8000-000000000003' })).rejects.toThrow('não confirmou')
   })
 })
+
+describe('SupabaseNutritionRepository complete evaluation',()=>{
+  const evaluation={patientId:'patient-1',evaluatedOn:'2026-11-08',consultationReason:'Motivo fictício',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000020'}
+  it('confirma avaliação somente após retorno da RPC',async()=>{const rpc=vi.fn().mockResolvedValue({data:[{saved_id:'evaluation-server',saved_updated_at:'2026-11-08T15:00:00Z'}],error:null});const saved=await new SupabaseNutritionRepository(clientWithRpc(rpc),'org-1').saveNutritionEvaluation(evaluation);expect(rpc).toHaveBeenCalledWith('save_nutrition_evaluation',expect.objectContaining({p_patient_id:'patient-1'}));expect(saved.id).toBe('evaluation-server')})
+  it('traduz conflito do recordatório',async()=>{const rpc=vi.fn().mockResolvedValue({data:null,error:{code:'40001',message:'conflict'}});const repo=new SupabaseNutritionRepository(clientWithRpc(rpc),'org-1');await expect(repo.saveDietaryRecall24h({evaluationId:'evaluation-1',patientId:'patient-1',recallDate:'2026-11-08',meals:[{id:'m',name:'Almoço',time:'12:00',foods:[{id:'f',name:'Item',quantity:''}],context:'',notes:''}],complementaryNotes:'',submissionKey:'50000000-0000-4000-8000-000000000021'},'recall-1','old')).rejects.toBeInstanceOf(RepositoryConflictError)})
+})

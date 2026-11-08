@@ -72,3 +72,29 @@ export const habitCheckInSchema = z.object({
   professionalPrivateNote: z.string().trim().max(4000),
   submissionKey: z.string().uuid(),
 })
+
+const optionalClinicalText = (maximum: number) => z.string().trim().max(maximum)
+
+export const nutritionEvaluationSchema = z.object({
+  patientId: z.string().min(1),
+  evaluatedOn: z.string().date('Informe uma data válida.').refine((value) => new Date(`${value}T12:00:00`) <= new Date(), 'A data não pode estar no futuro.'),
+  consultationReason: optionalClinicalText(4000), healthHistory: optionalClinicalText(8000), reportedAllergies: optionalClinicalText(4000),
+  reportedMedications: optionalClinicalText(4000), previousNutritionCare: optionalClinicalText(4000), foodRestrictionsAndPreferences: optionalClinicalText(8000),
+  usualMealSchedule: optionalClinicalText(4000), usualMealsCount: optionalClinicalText(200), mealEnvironment: optionalClinicalText(4000),
+  foodAccess: optionalClinicalText(4000), hydration: optionalClinicalText(2000), reportedDifficulties: optionalClinicalText(8000),
+  professionalObservations: optionalClinicalText(8000), submissionKey: z.string().uuid(),
+})
+
+const recallMealSchema = z.object({
+  id: z.string().min(1), name: z.string().trim().min(1, 'Informe a refeição.').max(200),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Informe um horário válido.'),
+  foods: z.array(diaryItemSchema).min(1, 'Adicione ao menos um alimento relatado.').max(50),
+  context: optionalClinicalText(2000), notes: optionalClinicalText(2000),
+})
+
+export const dietaryRecall24hSchema = z.object({
+  evaluationId: z.string().min(1), patientId: z.string().min(1),
+  recallDate: z.string().date('Informe uma data válida.').refine((value) => new Date(`${value}T12:00:00`) <= new Date(), 'A data não pode estar no futuro.'),
+  meals: z.array(recallMealSchema).min(1, 'Adicione ao menos uma refeição recordada.').max(20),
+  complementaryNotes: optionalClinicalText(4000), submissionKey: z.string().uuid(),
+})

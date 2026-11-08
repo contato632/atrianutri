@@ -12,6 +12,7 @@
 - criação de avaliação e cálculo do IMC;
 - versões de rascunho do plano;
 - criação, edição, idempotência e conflito do diário, metas e acompanhamentos;
+- avaliação estruturada, recordatório de 24 horas e evolução consolidada;
 - confirmação server-side e conflitos do adaptador Supabase;
 - restauração de sessão, exigência de MFA, logout e sessão expirada;
 - validação do formulário de paciente;
@@ -21,9 +22,9 @@
 - build TypeScript/Vite de produção.
 - Playwright em Chromium real para desktop 1280×800 e celular 390×844, incluindo ausência de estouro horizontal.
 
-Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, incluindo autor paciente, profissional atribuído, profissional sem vínculo, recepção e notas clínicas privadas. Na variante slim oficial da Supabase CLI 3.0.0, as migrations foram reaplicadas em PostgreSQL 17 e os 70 testes passaram.
+Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, incluindo autor paciente, profissional atribuído, profissional sem vínculo, recepção, notas privadas, avaliações completas e recordatórios. Na variante slim oficial da Supabase CLI 3.0.0, as migrations foram reaplicadas em PostgreSQL 17 e os 86 testes passaram.
 
-`npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste avaliação, plano, diário, meta, check-in e nota privada, confirma que leitura e mutação cruzadas são bloqueadas por RLS e conclui enrollment/verificação TOTP com elevação de sessão.
+`npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste antropometria, plano, diário, meta, check-in, nota privada, avaliação estruturada e recordatório, confirma que leitura e mutação cruzadas são bloqueadas por RLS e conclui enrollment/verificação TOTP com elevação de sessão.
 
 ## Cenários manuais da demonstração
 

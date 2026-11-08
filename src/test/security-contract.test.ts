@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 const root = process.cwd()
 const migration = readFileSync(join(root, 'supabase/migrations/20261108122833_atrianutri_foundation.sql'), 'utf8')
 const diaryMigration = readFileSync(join(root, 'supabase/migrations/20261108150000_food_diary_and_habits.sql'), 'utf8')
+const evaluationMigration = readFileSync(join(root, 'supabase/migrations/20261108180000_complete_nutrition_evaluation.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -116,5 +117,21 @@ describe('food diary and habits migration contract', () => {
     for (const field of ['foods', 'eating_context', 'hunger_before', 'satiety_after', 'routine_changes', 'difficulties', 'next_step', 'content']) {
       expect(diaryMigration).toMatch(new RegExp(`'${field}'`))
     }
+  })
+})
+
+describe('complete nutrition evaluation migration contract', () => {
+  it.each(['nutrition_evaluations','dietary_recalls_24h'])('habilita RLS em %s',(table)=>expect(evaluationMigration).toContain(`alter table public.${table} enable row level security`))
+  it('preserva autoria, vínculo composto e escrita somente por RPC',()=>{
+    expect(evaluationMigration).toContain('responsible_professional_user_id uuid not null')
+    expect(evaluationMigration).toContain('references public.nutrition_evaluations(id, organization_id, patient_id)')
+    expect(evaluationMigration).toContain('revoke all on public.nutrition_evaluations,public.dietary_recalls_24h from public,anon,authenticated')
+    expect(evaluationMigration).toContain('public.save_nutrition_evaluation')
+    expect(evaluationMigration).toContain('public.save_dietary_recall_24h')
+    expect(evaluationMigration).not.toContain('drop table')
+    expect(evaluationMigration).not.toContain('truncate')
+  })
+  it('remove conteúdo clínico da auditoria',()=>{
+    for(const field of ['consultation_reason','health_history','reported_allergies','reported_medications','professional_observations','complementary_notes']) expect(evaluationMigration).toContain(`'${field}'`)
   })
 })

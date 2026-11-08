@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MealPlan, NutritionWorkspace } from '../domain/models'
 import { DemoNutritionRepository } from './repository'
 
-const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [] }
+const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [] }
 
 describe('DemoNutritionRepository', () => {
   it('cria e edita paciente sem misturar o perfil clínico no cadastro', async () => {
@@ -65,5 +65,13 @@ describe('DemoNutritionRepository', () => {
     const goal = await repository.saveHabitGoal({ patientId: first.id, title: 'Meta do primeiro paciente', description: '', status: 'active', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '20000000-0000-4000-8000-000000000001' })
     await expect(repository.saveHabitGoal({ ...goal, title: 'Tentativa concorrente' }, goal.id, 'timestamp-antigo')).rejects.toThrow('outra sessão')
     await expect(repository.saveHabitCheckIn({ patientId: second.id, goalId: goal.id, recordedOn: '2026-11-08', progress: 'difficulty', notes: '', difficulties: '', nextStep: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '20000000-0000-4000-8000-000000000002' })).rejects.toThrow('não encontrada')
+  })
+
+  it('salva avaliação estruturada e recordatório vinculados no modo demonstração', async () => {
+    const repository=new DemoNutritionRepository(empty);const patient=await repository.createPatient({fullName:'Paciente Avaliação',birthDate:'1990-01-01',phone:'(11) 90000-0010',email:'avaliacao@demo.local',status:'active'})
+    const evaluation=await repository.saveNutritionEvaluation({patientId:patient.id,evaluatedOn:'2026-11-08',consultationReason:'Contexto fictício',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000010'})
+    await repository.saveDietaryRecall24h({evaluationId:evaluation.id,patientId:patient.id,recallDate:'2026-11-07',meals:[{id:'meal-1',name:'Almoço',time:'12:00',foods:[{id:'food-1',name:'Preparação fictícia',quantity:''}],context:'',notes:''}],complementaryNotes:'',submissionKey:'50000000-0000-4000-8000-000000000011'})
+    const snapshot=await repository.snapshot();expect(snapshot.nutritionEvaluations[0].consultationReason).toBe('Contexto fictício');expect(snapshot.dietaryRecalls24h[0].evaluationId).toBe(evaluation.id)
+    await expect(repository.saveNutritionEvaluation({...evaluation,consultationReason:'Concorrente'},evaluation.id,'antigo')).rejects.toThrow('outra sessão')
   })
 })

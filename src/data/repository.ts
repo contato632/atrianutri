@@ -1,5 +1,5 @@
 import { calculateBmi } from '../domain/nutrition'
-import type { Assessment, AssessmentInput, ClinicalProfileInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput } from '../domain/models'
+import type { Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput } from '../domain/models'
 import { demoWorkspace } from './demo-data'
 
 export interface NutritionRepository {
@@ -12,6 +12,8 @@ export interface NutritionRepository {
   saveFoodDiaryEntry(input: FoodDiaryEntryInput, entryId?: string, expectedUpdatedAt?: string): Promise<FoodDiaryEntry>
   saveHabitGoal(input: HabitGoalInput, goalId?: string, expectedUpdatedAt?: string): Promise<HabitGoal>
   saveHabitCheckIn(input: HabitCheckInInput, checkInId?: string, expectedUpdatedAt?: string): Promise<HabitCheckIn>
+  saveNutritionEvaluation(input: NutritionEvaluationInput, evaluationId?: string, expectedUpdatedAt?: string): Promise<NutritionEvaluation>
+  saveDietaryRecall24h(input: DietaryRecall24hInput, recallId?: string, expectedUpdatedAt?: string): Promise<DietaryRecall24h>
 }
 
 const clone = <T,>(value: T): T => structuredClone(value)
@@ -120,6 +122,32 @@ export class DemoNutritionRepository implements NutritionRepository {
     const saved: HabitCheckIn = { ...clone(input), id: previous?.id ?? id('checkin'), source: 'professional', createdAt: previous?.createdAt ?? timestamp, updatedAt: timestamp }
     if (index >= 0) this.data.habitCheckIns[index] = saved
     else this.data.habitCheckIns.unshift(saved)
+    return clone(saved)
+  }
+
+  async saveNutritionEvaluation(input: NutritionEvaluationInput, evaluationId?: string, expectedUpdatedAt?: string) {
+    if (!this.data.patients.some((patient) => patient.id === input.patientId)) throw new Error('Paciente não encontrado.')
+    const index = evaluationId ? this.data.nutritionEvaluations.findIndex((item) => item.id === evaluationId) : -1
+    const previous = index >= 0 ? this.data.nutritionEvaluations[index] : null
+    if (evaluationId && !previous) throw new Error('Avaliação nutricional não encontrada.')
+    if (previous && previous.updatedAt !== expectedUpdatedAt) throw new Error('A avaliação foi alterada em outra sessão. Atualize antes de salvar.')
+    const timestamp = new Date().toISOString()
+    const saved: NutritionEvaluation = { ...clone(input), id: previous?.id ?? id('evaluation'), authorLabel: previous?.authorLabel ?? 'Dra. Marina Costa', createdAt: previous?.createdAt ?? timestamp, updatedAt: timestamp }
+    if (index >= 0) this.data.nutritionEvaluations[index] = saved
+    else this.data.nutritionEvaluations.unshift(saved)
+    return clone(saved)
+  }
+
+  async saveDietaryRecall24h(input: DietaryRecall24hInput, recallId?: string, expectedUpdatedAt?: string) {
+    if (!this.data.nutritionEvaluations.some((item) => item.id === input.evaluationId && item.patientId === input.patientId)) throw new Error('Avaliação nutricional não encontrada para este paciente.')
+    const index = recallId ? this.data.dietaryRecalls24h.findIndex((item) => item.id === recallId) : -1
+    const previous = index >= 0 ? this.data.dietaryRecalls24h[index] : null
+    if (recallId && !previous) throw new Error('Recordatório de 24 horas não encontrado.')
+    if (previous && previous.updatedAt !== expectedUpdatedAt) throw new Error('O recordatório foi alterado em outra sessão. Atualize antes de salvar.')
+    const timestamp = new Date().toISOString()
+    const saved: DietaryRecall24h = { ...clone(input), id: previous?.id ?? id('recall'), authorLabel: previous?.authorLabel ?? 'Dra. Marina Costa', createdAt: previous?.createdAt ?? timestamp, updatedAt: timestamp }
+    if (index >= 0) this.data.dietaryRecalls24h[index] = saved
+    else this.data.dietaryRecalls24h.unshift(saved)
     return clone(saved)
   }
 }

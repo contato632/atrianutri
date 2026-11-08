@@ -3,6 +3,8 @@ import type {
   Assessment,
   AssessmentInput,
   ClinicalProfileInput,
+  DietaryRecall24h,
+  DietaryRecall24hInput,
   FoodDiaryEntry,
   FoodDiaryEntryInput,
   FoodDiaryMealType,
@@ -12,6 +14,8 @@ import type {
   HabitGoalInput,
   Meal,
   MealPlan,
+  NutritionEvaluation,
+  NutritionEvaluationInput,
   NutritionWorkspace,
   PatientAdministrative,
   PatientClinical,
@@ -87,7 +91,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   }
 
   async snapshot(): Promise<NutritionWorkspace> {
-    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult] = await Promise.all([
+    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult] = await Promise.all([
       this.client.from('patients_administrative').select('id,full_name,birth_date,phone,email,status,next_appointment_at,created_at').eq('organization_id', this.organizationId).is('archived_at', null).order('full_name'),
       this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
@@ -97,6 +101,8 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       this.client.from('habit_goals').select('id,patient_id,title,description,status,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('updated_at', { ascending: false }),
       this.client.from('habit_check_ins').select('id,habit_goal_id,patient_id,recorded_on,progress,notes,difficulties,next_step,source,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('recorded_on', { ascending: false }),
       this.client.from('clinical_private_notes').select('food_diary_entry_id,habit_goal_id,habit_check_in_id,content').eq('organization_id', this.organizationId),
+      this.client.from('nutrition_evaluations').select('id,patient_id,evaluated_on,consultation_reason,health_history,reported_allergies,reported_medications,previous_nutrition_care,food_restrictions_and_preferences,usual_meal_schedule,usual_meals_count,meal_environment,food_access,hydration,reported_difficulties,professional_observations,created_by,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('evaluated_on', { ascending: false }),
+      this.client.from('dietary_recalls_24h').select('id,nutrition_evaluation_id,patient_id,recall_date,meals,complementary_notes,created_by,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('recall_date', { ascending: false }),
     ])
 
     const patientRows = requireData(patientResult.data, patientResult.error, 'Não foi possível carregar os pacientes.')
@@ -108,6 +114,8 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const goalRows = requireData(goalResult.data, goalResult.error, 'Não foi possível carregar as metas de hábitos.')
     const checkInRows = requireData(checkInResult.data, checkInResult.error, 'Não foi possível carregar o acompanhamento de hábitos.')
     const privateNoteRows = requireData(privateNoteResult.data, privateNoteResult.error, 'Não foi possível carregar as observações profissionais.')
+    const evaluationRows = requireData(evaluationResult.data, evaluationResult.error, 'Não foi possível carregar as avaliações nutricionais.')
+    const recallRows = requireData(recallResult.data, recallResult.error, 'Não foi possível carregar os recordatórios de 24 horas.')
     const privateNote = (field: 'food_diary_entry_id' | 'habit_goal_id' | 'habit_check_in_id', id: unknown) => String(privateNoteRows.find((row) => row[field] === id)?.content ?? '')
 
     const patients: PatientAdministrative[] = patientRows.map((row) => ({
@@ -178,7 +186,16 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       sharedWithPatient: Boolean(row.shared_with_patient_at), professionalPrivateNote: privateNote('habit_check_in_id', row.id), submissionKey: String(row.submission_key), createdAt: String(row.created_at), updatedAt: String(row.updated_at),
     }))
 
-    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns }
+    const nutritionEvaluations: NutritionEvaluation[] = evaluationRows.map((row) => ({
+      id:String(row.id),patientId:String(row.patient_id),evaluatedOn:String(row.evaluated_on),consultationReason:String(row.consultation_reason??''),healthHistory:String(row.health_history??''),reportedAllergies:String(row.reported_allergies??''),reportedMedications:String(row.reported_medications??''),previousNutritionCare:String(row.previous_nutrition_care??''),foodRestrictionsAndPreferences:String(row.food_restrictions_and_preferences??''),usualMealSchedule:String(row.usual_meal_schedule??''),usualMealsCount:String(row.usual_meals_count??''),mealEnvironment:String(row.meal_environment??''),foodAccess:String(row.food_access??''),hydration:String(row.hydration??''),reportedDifficulties:String(row.reported_difficulties??''),professionalObservations:String(row.professional_observations??''),authorLabel:`Profissional · ${String(row.created_by).slice(0,8)}`,submissionKey:String(row.submission_key),createdAt:String(row.created_at),updatedAt:String(row.updated_at),
+    }))
+    const dietaryRecalls24h: DietaryRecall24h[] = recallRows.map((row) => ({
+      id:String(row.id),evaluationId:String(row.nutrition_evaluation_id),patientId:String(row.patient_id),recallDate:String(row.recall_date),
+      meals:Array.isArray(row.meals) ? row.meals.map((meal, index) => { const item=meal as Record<string,unknown>; return { id:String(item.id??`recall-meal-${index}`),name:String(item.name??''),time:String(item.time??''),context:String(item.context??''),notes:String(item.notes??''),foods:decodeMeals([{foods:item.foods}])[0].foods } }) : [],
+      complementaryNotes:String(row.complementary_notes??''),authorLabel:`Profissional · ${String(row.created_by).slice(0,8)}`,submissionKey:String(row.submission_key),createdAt:String(row.created_at),updatedAt:String(row.updated_at),
+    }))
+
+    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns, nutritionEvaluations, dietaryRecalls24h }
   }
 
   async createPatient(input: PatientInput) {
@@ -346,5 +363,19 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const confirmation = requireData(Array.isArray(data) ? data[0] : data, error, 'O acompanhamento de hábito não foi confirmado pelo servidor.')
     if (!confirmation?.saved_id || !confirmation.saved_updated_at) throw new Error('O servidor não confirmou o acompanhamento de hábito.')
     return { ...structuredClone(input), id: String(confirmation.saved_id), source: 'professional' as const, createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
+  }
+
+  async saveNutritionEvaluation(input: NutritionEvaluationInput, evaluationId?: string, expectedUpdatedAt?: string) {
+    const { data,error }=await this.client.rpc('save_nutrition_evaluation',{p_organization_id:this.organizationId,p_patient_id:input.patientId,p_evaluated_on:input.evaluatedOn,p_consultation_reason:input.consultationReason,p_health_history:input.healthHistory,p_reported_allergies:input.reportedAllergies,p_reported_medications:input.reportedMedications,p_previous_nutrition_care:input.previousNutritionCare,p_food_restrictions_and_preferences:input.foodRestrictionsAndPreferences,p_usual_meal_schedule:input.usualMealSchedule,p_usual_meals_count:input.usualMealsCount,p_meal_environment:input.mealEnvironment,p_food_access:input.foodAccess,p_hydration:input.hydration,p_reported_difficulties:input.reportedDifficulties,p_professional_observations:input.professionalObservations,p_submission_key:input.submissionKey,p_evaluation_id:evaluationId??null,p_expected_updated_at:expectedUpdatedAt??null})
+    const result=requireData(Array.isArray(data)?data[0]:data,error,'A avaliação nutricional não foi confirmada pelo servidor.')
+    if(!result?.saved_id||!result.saved_updated_at) throw new Error('O servidor não confirmou a avaliação nutricional.')
+    return {...structuredClone(input),id:String(result.saved_id),authorLabel:'Profissional responsável',createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)}
+  }
+
+  async saveDietaryRecall24h(input: DietaryRecall24hInput, recallId?: string, expectedUpdatedAt?: string) {
+    const {data,error}=await this.client.rpc('save_dietary_recall_24h',{p_organization_id:this.organizationId,p_patient_id:input.patientId,p_nutrition_evaluation_id:input.evaluationId,p_recall_date:input.recallDate,p_meals:input.meals,p_complementary_notes:input.complementaryNotes,p_submission_key:input.submissionKey,p_recall_id:recallId??null,p_expected_updated_at:expectedUpdatedAt??null})
+    const result=requireData(Array.isArray(data)?data[0]:data,error,'O recordatório de 24 horas não foi confirmado pelo servidor.')
+    if(!result?.saved_id||!result.saved_updated_at) throw new Error('O servidor não confirmou o recordatório de 24 horas.')
+    return {...structuredClone(input),id:String(result.saved_id),authorLabel:'Profissional responsável',createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)}
   }
 }

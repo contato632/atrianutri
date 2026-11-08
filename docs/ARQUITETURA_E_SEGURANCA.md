@@ -30,12 +30,16 @@ A migration versionada separa:
 - `food_diary_entries`: refeições e contexto alimentar, com autoria do paciente ou profissional;
 - `habit_goals` e `habit_check_ins`: metas individualizadas e evolução qualitativa;
 - `clinical_private_notes`: conteúdo profissional privado separado das linhas compartilháveis.
+- `nutrition_evaluations`: avaliação estruturada profissional sem duplicar anamnese ou antropometria;
+- `dietary_recalls_24h`: recordatório retrospectivo vinculado à avaliação, separado do diário contínuo.
 
 Toda entidade sensível possui `organization_id` direto ou por chave composta. A chave composta entre paciente e organização impede vínculos acidentais com registros de outra clínica.
 
 As versões de plano usam uma chave estrangeira composta com plano, organização e paciente. A gravação ocorre por RPC com bloqueio de linha e versão esperada, garantindo incremento atômico e detecção de concorrência.
 
 Diário e hábitos também usam chaves compostas, submissão idempotente e RPCs transacionais. O conteúdo potencialmente visível ao paciente e a observação privada nunca ocupam a mesma linha. O frontend autenticado não recebe grants de escrita direta nessas quatro tabelas.
+
+Avaliações completas e recordatórios seguem o mesmo padrão transacional. A evolução é uma projeção no frontend sobre fontes existentes — antropometria, hábitos, planos e avaliações — e não duplica seus históricos no banco.
 
 ## Autorização proposta
 

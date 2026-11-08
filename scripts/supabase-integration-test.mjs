@@ -224,6 +224,20 @@ try {
 }
 assert(crossDiaryDenied, 'RPC do diário não bloqueou escrita em outra organização')
 
+const evaluationResult = await request('/rest/v1/rpc/save_nutrition_evaluation', { method:'POST',token:tokenA,body:{
+  p_organization_id:organizationA,p_patient_id:patientA.id,p_evaluated_on:'2026-11-08',p_consultation_reason:'Motivo fictício de integração',p_health_history:'',p_reported_allergies:'',p_reported_medications:'',p_previous_nutrition_care:'',p_food_restrictions_and_preferences:'',p_usual_meal_schedule:'',p_usual_meals_count:'',p_meal_environment:'',p_food_access:'',p_hydration:'',p_reported_difficulties:'',p_professional_observations:'Sem diagnóstico automático.',p_submission_key:randomUUID(),
+}})
+const evaluation=Array.isArray(evaluationResult)?evaluationResult[0]:evaluationResult
+assert(evaluation?.saved_id&&evaluation?.saved_updated_at,'avaliação estruturada não recebeu confirmação transacional')
+const recallResult=await request('/rest/v1/rpc/save_dietary_recall_24h',{method:'POST',token:tokenA,body:{p_organization_id:organizationA,p_patient_id:patientA.id,p_nutrition_evaluation_id:evaluation.saved_id,p_recall_date:'2026-11-08',p_meals:[{id:randomUUID(),name:'Almoço fictício',time:'12:00',foods:[{id:randomUUID(),name:'Preparação relatada',quantity:'Não informada'}],context:'Teste local',notes:''}],p_complementary_notes:'Sem inferência nutricional.',p_submission_key:randomUUID()}})
+const recall=Array.isArray(recallResult)?recallResult[0]:recallResult
+assert(recall?.saved_id&&recall?.saved_updated_at,'recordatório não recebeu confirmação transacional')
+const [evaluationRows,recallRows]=await Promise.all([request(`/rest/v1/nutrition_evaluations?select=id&patient_id=eq.${patientA.id}`,{token:tokenA}),request(`/rest/v1/dietary_recalls_24h?select=id&patient_id=eq.${patientA.id}`,{token:tokenA})])
+assert(evaluationRows.length===1&&recallRows.length===1,'avaliação e recordatório não foram persistidos')
+let crossEvaluationDenied=false
+try{await request('/rest/v1/rpc/save_nutrition_evaluation',{method:'POST',token:tokenA,body:{p_organization_id:organizationB,p_patient_id:patientB,p_evaluated_on:'2026-11-08',p_consultation_reason:'Tentativa cruzada',p_health_history:'',p_reported_allergies:'',p_reported_medications:'',p_previous_nutrition_care:'',p_food_restrictions_and_preferences:'',p_usual_meal_schedule:'',p_usual_meals_count:'',p_meal_environment:'',p_food_access:'',p_hydration:'',p_reported_difficulties:'',p_professional_observations:'',p_submission_key:randomUUID()}})}catch(error){crossEvaluationDenied=error instanceof Error&&error.message.includes('403')}
+assert(crossEvaluationDenied,'RPC de avaliação não bloqueou outra organização')
+
 const factor = await request('/auth/v1/factors', {
   method: 'POST', token: tokenA, body: { factor_type: 'totp', friendly_name: `Integração ${suffix}` },
 })
@@ -244,5 +258,7 @@ console.log('PASS: avaliação persistida com IMC gerado pelo PostgreSQL')
 console.log('PASS: plano e primeira versão persistidos atomicamente')
 console.log('PASS: diário, meta, acompanhamento e nota privada persistidos por RPC')
 console.log('PASS: escrita cruzada do diário bloqueada entre organizações')
+console.log('PASS: avaliação completa e recordatório persistidos por RPC')
+console.log('PASS: escrita cruzada da avaliação bloqueada entre organizações')
 console.log('PASS: enrollment e verificação TOTP elevaram a sessão')
 console.log('PASS: nenhum dado ou token real foi utilizado')
