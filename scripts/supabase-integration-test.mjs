@@ -83,7 +83,7 @@ insert into public.organizations (id, name, created_by) values
   ('${organizationA}', 'Organização A Fictícia', '${userA.id}'),
   ('${organizationB}', 'Organização B Fictícia', '${userB.id}');
 insert into public.organization_members (organization_id, user_id, role, clinical_access, created_by) values
-  ('${organizationA}', '${userA.id}', 'nutritionist', true, '${userA.id}'),
+  ('${organizationA}', '${userA.id}', 'owner', true, '${userA.id}'),
   ('${organizationB}', '${userB.id}', 'nutritionist', true, '${userB.id}');
 insert into public.patients_administrative (id, organization_id, full_name, birth_date, email, phone, created_by)
 values ('${patientB}', '${organizationB}', 'Paciente B Fictício', '1991-02-03', 'paciente-b-${suffix}@example.invalid', '11999990000', '${userB.id}');
@@ -238,6 +238,55 @@ let crossEvaluationDenied=false
 try{await request('/rest/v1/rpc/save_nutrition_evaluation',{method:'POST',token:tokenA,body:{p_organization_id:organizationB,p_patient_id:patientB,p_evaluated_on:'2026-11-08',p_consultation_reason:'Tentativa cruzada',p_health_history:'',p_reported_allergies:'',p_reported_medications:'',p_previous_nutrition_care:'',p_food_restrictions_and_preferences:'',p_usual_meal_schedule:'',p_usual_meals_count:'',p_meal_environment:'',p_food_access:'',p_hydration:'',p_reported_difficulties:'',p_professional_observations:'',p_submission_key:randomUUID()}})}catch(error){crossEvaluationDenied=error instanceof Error&&error.message.includes('403')}
 assert(crossEvaluationDenied,'RPC de avaliação não bloqueou outra organização')
 
+const serviceResult = await request('/rest/v1/rpc/save_professional_service', { method: 'POST', token: tokenA, body: {
+  p_organization_id: organizationA, p_name: 'Consulta fictícia de integração', p_duration: 50,
+  p_price_cents: 18000, p_active: true, p_service_id: null,
+} })
+const service = Array.isArray(serviceResult) ? serviceResult[0] : serviceResult
+assert(service?.saved_id, 'serviço profissional não foi persistido')
+
+const appointmentResult = await request('/rest/v1/rpc/create_appointment_series', { method: 'POST', token: tokenA, body: {
+  p_organization_id: organizationA, p_professional_user_id: userA.id, p_patient_id: patientA.id,
+  p_service_id: service.saved_id, p_category: 'nutrition_consultation', p_status: 'confirmed',
+  p_title: 'Consulta fictícia de integração', p_private_title: '', p_administrative_note: 'Teste local.',
+  p_local_start: '2026-12-10 09:00:00', p_duration_minutes: 50, p_timezone: 'America/Bahia',
+  p_recurrence: 'none', p_recurrence_ends_on: null,
+} })
+const appointment = Array.isArray(appointmentResult) ? appointmentResult[0] : appointmentResult
+assert(appointment?.saved_id && Number(appointment.occurrence_count) === 1, 'agendamento não foi persistido')
+
+let overlapDenied = false
+try {
+  await request('/rest/v1/rpc/create_appointment_series', { method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationA, p_professional_user_id: userA.id, p_patient_id: patientA.id,
+    p_service_id: service.saved_id, p_category: 'follow_up', p_status: 'scheduled', p_title: 'Conflito fictício',
+    p_private_title: '', p_administrative_note: '', p_local_start: '2026-12-10 09:30:00',
+    p_duration_minutes: 40, p_timezone: 'America/Bahia', p_recurrence: 'none', p_recurrence_ends_on: null,
+  } })
+} catch (error) {
+  overlapDenied = error instanceof Error && error.message.includes('Appointment time conflict')
+}
+assert(overlapDenied, 'banco não bloqueou sobreposição do mesmo profissional')
+
+let crossAppointmentDenied = false
+try {
+  await request('/rest/v1/rpc/create_appointment_series', { method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationB, p_professional_user_id: userB.id, p_patient_id: patientB,
+    p_service_id: null, p_category: 'follow_up', p_status: 'scheduled', p_title: 'Tentativa cruzada',
+    p_private_title: '', p_administrative_note: '', p_local_start: '2026-12-11 09:00:00',
+    p_duration_minutes: 40, p_timezone: 'America/Bahia', p_recurrence: 'none', p_recurrence_ends_on: null,
+  } })
+} catch (error) {
+  crossAppointmentDenied = error instanceof Error && error.message.includes('403')
+}
+assert(crossAppointmentDenied, 'RPC da agenda não bloqueou outra organização')
+
+await request('/rest/v1/rpc/cancel_appointment', { method: 'POST', token: tokenA, body: {
+  p_appointment_id: appointment.saved_id, p_expected_updated_at: appointment.saved_updated_at, p_scope: 'occurrence',
+} })
+const canceledAppointments = await request(`/rest/v1/appointments?select=id,status&id=eq.${appointment.saved_id}`, { token: tokenA })
+assert(canceledAppointments.length === 1 && canceledAppointments[0].status === 'canceled', 'cancelamento lógico não foi confirmado')
+
 const factor = await request('/auth/v1/factors', {
   method: 'POST', token: tokenA, body: { factor_type: 'totp', friendly_name: `Integração ${suffix}` },
 })
@@ -260,5 +309,9 @@ console.log('PASS: diário, meta, acompanhamento e nota privada persistidos por 
 console.log('PASS: escrita cruzada do diário bloqueada entre organizações')
 console.log('PASS: avaliação completa e recordatório persistidos por RPC')
 console.log('PASS: escrita cruzada da avaliação bloqueada entre organizações')
+console.log('PASS: serviço e agendamento persistidos por RPC')
+console.log('PASS: sobreposição do mesmo profissional bloqueada no PostgreSQL')
+console.log('PASS: escrita cruzada da agenda bloqueada entre organizações')
+console.log('PASS: cancelamento lógico da ocorrência confirmado')
 console.log('PASS: enrollment e verificação TOTP elevaram a sessão')
 console.log('PASS: nenhum dado ou token real foi utilizado')

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MealPlan, NutritionWorkspace } from '../domain/models'
 import { DemoNutritionRepository } from './repository'
 
-const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [] }
+const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [], professionalServices: [], appointments: [] }
 
 describe('DemoNutritionRepository', () => {
   it('cria e edita paciente sem misturar o perfil clínico no cadastro', async () => {
@@ -74,4 +74,6 @@ describe('DemoNutritionRepository', () => {
     const snapshot=await repository.snapshot();expect(snapshot.nutritionEvaluations[0].consultationReason).toBe('Contexto fictício');expect(snapshot.dietaryRecalls24h[0].evaluationId).toBe(evaluation.id)
     await expect(repository.saveNutritionEvaluation({...evaluation,consultationReason:'Concorrente'},evaluation.id,'antigo')).rejects.toThrow('outra sessão')
   })
+
+  it('cria, remarca e cancela agenda em memória com prevenção de conflito',async()=>{const repository=new DemoNutritionRepository(empty);const patient=await repository.createPatient({fullName:'Paciente Agenda',birthDate:'1990-01-01',phone:'(11) 90000-0099',email:'agenda@demo.local',status:'active'});const input={patientId:patient.id,category:'nutrition-consultation' as const,status:'scheduled' as const,title:'Consulta nutricional',privateTitle:'',administrativeNote:'',startsAt:'2027-01-10T12:00:00.000Z',endsAt:'2027-01-10T13:00:00.000Z',recurrenceFrequency:'none' as const};const created=await repository.saveAppointment(input);await expect(repository.saveAppointment({...input,startsAt:'2027-01-10T12:30:00.000Z',endsAt:'2027-01-10T13:30:00.000Z'})).rejects.toThrow('Conflito');const moved=await repository.saveAppointment({...input,startsAt:'2027-01-10T14:00:00.000Z',endsAt:'2027-01-10T15:00:00.000Z'},created.id,'occurrence',created.updatedAt);expect(moved.startsAt).toContain('14:00');await repository.cancelAppointment(moved.id,'occurrence',moved.updatedAt);expect((await repository.snapshot()).appointments[0].status).toBe('canceled')})
 })

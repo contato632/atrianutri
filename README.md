@@ -17,6 +17,7 @@ Esta branch contém uma demonstração vertical navegável em português brasile
 - `SupabaseNutritionRepository` conectado ao bootstrap da aplicação, atrás de bloqueio de homologação;
 - diário alimentar contextual e acompanhamento de hábitos/metas no prontuário;
 - avaliação nutricional estruturada, recordatório de 24 horas e evolução clínica consolidada;
+- agenda profissional diária, semanal e mensal, recorrências, conflitos e serviços administrativos;
 - testes unitários, de componentes e contratos de segurança.
 
 Os dados exibidos são fictícios. No modo padrão `demo`, as alterações vivem apenas na memória e desaparecem ao recarregar. O modo Supabase exige configuração explícita, valida o Project Ref e mantém os dados reais bloqueados até a homologação remota de RLS, backup e restauração.
@@ -54,7 +55,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares `20261108150000_food_diary_and_habits.sql` e `20261108180000_complete_nutrition_evaluation.sql` estão somente versionadas e validadas localmente; **não foram aplicadas remotamente**. As três migrations passaram juntas em PostgreSQL 17 oficial do Supabase e em 86 testes pgTAP. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
+A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05, 06 e 07 estão somente versionadas e validadas localmente; **não foram aplicadas remotamente**. As quatro migrations passaram juntas em PostgreSQL 17 oficial do Supabase e em 103 testes pgTAP. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 
@@ -75,6 +76,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Etapa 03 — integração Supabase](docs/ETAPA_03_INTEGRACAO_SUPABASE.md)
 - [Etapa 05 — diário alimentar e hábitos](docs/ETAPA_05_DIARIO_HABITOS.md)
 - [Etapa 06 — avaliação nutricional completa](docs/ETAPA_06_AVALIACAO_COMPLETA.md)
+- [Etapa 07 — agenda profissional](docs/ETAPA_07_AGENDA_PROFISSIONAL.md)
 
 ## Limites de produção
 

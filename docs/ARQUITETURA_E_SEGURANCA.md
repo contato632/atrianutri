@@ -32,6 +32,10 @@ A migration versionada separa:
 - `clinical_private_notes`: conteúdo profissional privado separado das linhas compartilháveis.
 - `nutrition_evaluations`: avaliação estruturada profissional sem duplicar anamnese ou antropometria;
 - `dietary_recalls_24h`: recordatório retrospectivo vinculado à avaliação, separado do diário contínuo.
+- `professional_services`: catálogo administrativo com duração e valor opcional;
+- `appointment_series` e `appointments`: recorrência, responsável, paciente opcional conforme categoria e intervalo efetivo;
+- `appointment_private_details`: título particular isolado da visão operacional da recepção;
+- `appointment_changes`: autoria e horário das alterações relevantes da agenda.
 
 Toda entidade sensível possui `organization_id` direto ou por chave composta. A chave composta entre paciente e organização impede vínculos acidentais com registros de outra clínica.
 
@@ -40,6 +44,8 @@ As versões de plano usam uma chave estrangeira composta com plano, organizaçã
 Diário e hábitos também usam chaves compostas, submissão idempotente e RPCs transacionais. O conteúdo potencialmente visível ao paciente e a observação privada nunca ocupam a mesma linha. O frontend autenticado não recebe grants de escrita direta nessas quatro tabelas.
 
 Avaliações completas e recordatórios seguem o mesmo padrão transacional. A evolução é uma projeção no frontend sobre fontes existentes — antropometria, hábitos, planos e avaliações — e não duplica seus históricos no banco.
+
+A agenda usa RPCs para todas as mutações. Uma constraint de exclusão GiST torna o PostgreSQL a autoridade contra sobreposição do mesmo profissional; profissionais distintos podem ocupar o mesmo intervalo. Recorrências usam hora civil em timezone IANA na criação e persistem ocorrências em `timestamptz`, com limite de quantidade e horizonte. Compromissos particulares guardam somente um título neutro na agenda operacional.
 
 ## Autorização proposta
 

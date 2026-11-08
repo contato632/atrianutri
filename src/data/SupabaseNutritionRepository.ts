@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
+  Appointment,
+  AppointmentChangeScope,
+  AppointmentInput,
   Assessment,
   AssessmentInput,
   ClinicalProfileInput,
@@ -21,6 +24,8 @@ import type {
   PatientClinical,
   PatientInput,
   PatientStatus,
+  ProfessionalService,
+  ProfessionalServiceInput,
 } from '../domain/models'
 import type { NutritionRepository } from './repository'
 
@@ -35,6 +40,7 @@ export class RepositoryConflictError extends Error {
 
 function repositoryError(error: QueryError, fallback: string): Error {
   if (error?.code === '40001' || error?.code === '23505') return new RepositoryConflictError()
+  if (error?.code === '23P01') return new Error('Conflito de horário com outro compromisso deste profissional.')
   if (error?.code === '42501') return new Error('Você não possui permissão para realizar esta operação.')
   if (error?.code === '23503') return new Error('O vínculo entre organização, paciente e registro é inválido.')
   return new Error(fallback)
@@ -91,7 +97,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   }
 
   async snapshot(): Promise<NutritionWorkspace> {
-    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult] = await Promise.all([
+    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult, serviceResult, appointmentResult, seriesResult, appointmentPrivateResult] = await Promise.all([
       this.client.from('patients_administrative').select('id,full_name,birth_date,phone,email,status,next_appointment_at,created_at').eq('organization_id', this.organizationId).is('archived_at', null).order('full_name'),
       this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
@@ -103,6 +109,10 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       this.client.from('clinical_private_notes').select('food_diary_entry_id,habit_goal_id,habit_check_in_id,content').eq('organization_id', this.organizationId),
       this.client.from('nutrition_evaluations').select('id,patient_id,evaluated_on,consultation_reason,health_history,reported_allergies,reported_medications,previous_nutrition_care,food_restrictions_and_preferences,usual_meal_schedule,usual_meals_count,meal_environment,food_access,hydration,reported_difficulties,professional_observations,created_by,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('evaluated_on', { ascending: false }),
       this.client.from('dietary_recalls_24h').select('id,nutrition_evaluation_id,patient_id,recall_date,meals,complementary_notes,created_by,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('recall_date', { ascending: false }),
+      this.client.from('professional_services').select('id,name,default_duration_minutes,price_cents,active,created_at,updated_at').eq('organization_id',this.organizationId).order('name'),
+      this.client.from('appointments').select('id,series_id,patient_id,service_id,professional_user_id,category,status,title,administrative_note,starts_at,ends_at,created_at,updated_at').eq('organization_id',this.organizationId).is('archived_at',null).order('starts_at'),
+      this.client.from('appointment_series').select('id,recurrence,recurrence_ends_on').eq('organization_id',this.organizationId),
+      this.client.from('appointment_private_details').select('appointment_id,private_title').eq('organization_id',this.organizationId),
     ])
 
     const patientRows = requireData(patientResult.data, patientResult.error, 'Não foi possível carregar os pacientes.')
@@ -116,6 +126,10 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const privateNoteRows = requireData(privateNoteResult.data, privateNoteResult.error, 'Não foi possível carregar as observações profissionais.')
     const evaluationRows = requireData(evaluationResult.data, evaluationResult.error, 'Não foi possível carregar as avaliações nutricionais.')
     const recallRows = requireData(recallResult.data, recallResult.error, 'Não foi possível carregar os recordatórios de 24 horas.')
+    const serviceRows=requireData(serviceResult.data,serviceResult.error,'Não foi possível carregar os serviços.')
+    const appointmentRows=requireData(appointmentResult.data,appointmentResult.error,'Não foi possível carregar a agenda.')
+    const seriesRows=requireData(seriesResult.data,seriesResult.error,'Não foi possível carregar as recorrências.')
+    const appointmentPrivateRows=requireData(appointmentPrivateResult.data,appointmentPrivateResult.error,'Não foi possível carregar os detalhes particulares.')
     const privateNote = (field: 'food_diary_entry_id' | 'habit_goal_id' | 'habit_check_in_id', id: unknown) => String(privateNoteRows.find((row) => row[field] === id)?.content ?? '')
 
     const patients: PatientAdministrative[] = patientRows.map((row) => ({
@@ -194,8 +208,10 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       meals:Array.isArray(row.meals) ? row.meals.map((meal, index) => { const item=meal as Record<string,unknown>; return { id:String(item.id??`recall-meal-${index}`),name:String(item.name??''),time:String(item.time??''),context:String(item.context??''),notes:String(item.notes??''),foods:decodeMeals([{foods:item.foods}])[0].foods } }) : [],
       complementaryNotes:String(row.complementary_notes??''),authorLabel:`Profissional · ${String(row.created_by).slice(0,8)}`,submissionKey:String(row.submission_key),createdAt:String(row.created_at),updatedAt:String(row.updated_at),
     }))
+    const professionalServices:ProfessionalService[]=serviceRows.map((row)=>({id:String(row.id),name:String(row.name),defaultDurationMinutes:Number(row.default_duration_minutes),priceCents:row.price_cents===null?undefined:Number(row.price_cents),active:Boolean(row.active),createdAt:String(row.created_at),updatedAt:String(row.updated_at)}))
+    const appointments:Appointment[]=appointmentRows.map((row)=>{const series=seriesRows.find((item)=>item.id===row.series_id);return{id:String(row.id),seriesId:row.series_id?String(row.series_id):undefined,patientId:row.patient_id?String(row.patient_id):undefined,serviceId:row.service_id?String(row.service_id):undefined,professionalId:String(row.professional_user_id),professionalLabel:`Profissional · ${String(row.professional_user_id).slice(0,8)}`,category:String(row.category).replaceAll('_','-') as Appointment['category'],status:String(row.status).replaceAll('_','-') as Appointment['status'],title:String(row.title),privateTitle:String(appointmentPrivateRows.find((item)=>item.appointment_id===row.id)?.private_title??''),administrativeNote:String(row.administrative_note??''),startsAt:String(row.starts_at),endsAt:String(row.ends_at),recurrenceFrequency:(series?String(series.recurrence):'none') as Appointment['recurrenceFrequency'],recurrenceEndsOn:series?.recurrence_ends_on?String(series.recurrence_ends_on):undefined,createdAt:String(row.created_at),updatedAt:String(row.updated_at)}})
 
-    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns, nutritionEvaluations, dietaryRecalls24h }
+    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns, nutritionEvaluations, dietaryRecalls24h, professionalServices, appointments }
   }
 
   async createPatient(input: PatientInput) {
@@ -378,4 +394,12 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     if(!result?.saved_id||!result.saved_updated_at) throw new Error('O servidor não confirmou o recordatório de 24 horas.')
     return {...structuredClone(input),id:String(result.saved_id),authorLabel:'Profissional responsável',createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)}
   }
+
+  async saveProfessionalService(input:ProfessionalServiceInput,serviceId?:string){const {data,error}=await this.client.rpc('save_professional_service',{p_organization_id:this.organizationId,p_name:input.name,p_duration:input.defaultDurationMinutes,p_price_cents:input.priceCents??null,p_active:input.active,p_service_id:serviceId??null});const result=requireData(Array.isArray(data)?data[0]:data,error,'O serviço não foi confirmado pelo servidor.');if(!result?.saved_id||!result.saved_updated_at)throw new Error('O servidor não confirmou o serviço.');return{...structuredClone(input),id:String(result.saved_id),createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)} }
+
+  async saveAppointment(input:AppointmentInput,appointmentId?:string,scope:AppointmentChangeScope='occurrence',expectedUpdatedAt?:string){
+    if(appointmentId){const {data,error}=await this.client.rpc('update_appointment',{p_appointment_id:appointmentId,p_expected_updated_at:expectedUpdatedAt,p_scope:scope,p_patient_id:input.patientId??null,p_service_id:input.serviceId??null,p_category:input.category.replaceAll('-','_'),p_status:input.status.replaceAll('-','_'),p_title:input.title,p_private_title:input.privateTitle,p_administrative_note:input.administrativeNote,p_starts_at:input.startsAt,p_ends_at:input.endsAt});const result=requireData(Array.isArray(data)?data[0]:data,error,'O agendamento não foi confirmado pelo servidor.');if(!result?.saved_id||!result.saved_updated_at)throw new Error('O servidor não confirmou o agendamento.');return{...structuredClone(input),id:String(result.saved_id),professionalId:input.professionalId??'',professionalLabel:'Profissional responsável',createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)}}
+    const actor=input.professionalId??await this.userId();const local=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date(input.startsAt));const part=(type:string)=>local.find((item)=>item.type===type)?.value;const localStart=`${part('year')}-${part('month')}-${part('day')} ${part('hour')}:${part('minute')}:00`;const duration=Math.round((new Date(input.endsAt).getTime()-new Date(input.startsAt).getTime())/60000);const {data,error}=await this.client.rpc('create_appointment_series',{p_organization_id:this.organizationId,p_professional_user_id:actor,p_patient_id:input.patientId??null,p_service_id:input.serviceId??null,p_category:input.category.replaceAll('-','_'),p_status:input.status.replaceAll('-','_'),p_title:input.title,p_private_title:input.privateTitle,p_administrative_note:input.administrativeNote,p_local_start:localStart,p_duration_minutes:duration,p_timezone:'America/Bahia',p_recurrence:input.recurrenceFrequency,p_recurrence_ends_on:input.recurrenceEndsOn??null});const result=requireData(Array.isArray(data)?data[0]:data,error,'O agendamento não foi confirmado pelo servidor.');if(!result?.saved_id||!result.saved_updated_at)throw new Error('O servidor não confirmou o agendamento.');return{...structuredClone(input),id:String(result.saved_id),seriesId:result.saved_series_id?String(result.saved_series_id):undefined,professionalId:actor,professionalLabel:'Profissional responsável',createdAt:String(result.saved_updated_at),updatedAt:String(result.saved_updated_at)}
+  }
+  async cancelAppointment(appointmentId:string,scope:AppointmentChangeScope,expectedUpdatedAt:string){const {error}=await this.client.rpc('cancel_appointment',{p_appointment_id:appointmentId,p_expected_updated_at:expectedUpdatedAt,p_scope:scope});if(error)throw repositoryError(error,'O cancelamento não foi confirmado pelo servidor.')}
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assessmentSchema, dietaryRecall24hSchema, foodDiaryEntrySchema, habitCheckInSchema, habitGoalSchema, nutritionEvaluationSchema, patientSchema } from './validation'
+import { appointmentSchema, assessmentSchema, dietaryRecall24hSchema, foodDiaryEntrySchema, habitCheckInSchema, habitGoalSchema, nutritionEvaluationSchema, patientSchema, professionalServiceSchema } from './validation'
 
 describe('patientSchema', () => {
   it('aceita cadastro administrativo válido', () => {
@@ -47,4 +47,8 @@ describe('avaliação completa e recordatório de 24 horas', () => {
     expect(dietaryRecall24hSchema.safeParse({...base,meals:[{id:'meal-1',name:'Almoço',time:'12:30',foods:[{id:'food-1',name:'Preparação relatada',quantity:''}],context:'',notes:''}]}).success).toBe(true)
     expect(dietaryRecall24hSchema.safeParse({...base,meals:[]}).success).toBe(false)
   })
+})
+
+describe('agenda e serviços',()=>{
+  it('valida serviço e exige paciente em consulta',()=>{expect(professionalServiceSchema.safeParse({name:'Consulta inicial',defaultDurationMinutes:60,priceCents:20000,active:true}).success).toBe(true);const base={category:'nutrition-consultation',status:'scheduled',title:'Consulta',privateTitle:'',administrativeNote:'',startsAt:'2026-11-09T12:00:00.000Z',endsAt:'2026-11-09T13:00:00.000Z',recurrenceFrequency:'none'};expect(appointmentSchema.safeParse(base).success).toBe(false);expect(appointmentSchema.safeParse({...base,patientId:'patient-1'}).success).toBe(true)})
 })

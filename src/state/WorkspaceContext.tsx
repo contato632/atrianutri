@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput } from '../domain/models'
+import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -16,10 +16,13 @@ type WorkspaceContextValue = {
   saveHabitCheckIn: (input: HabitCheckInInput, checkIn?: HabitCheckIn) => Promise<HabitCheckIn>
   saveNutritionEvaluation: (input: NutritionEvaluationInput, evaluation?: NutritionEvaluation) => Promise<NutritionEvaluation>
   saveDietaryRecall24h: (input: DietaryRecall24hInput, recall?: DietaryRecall24h) => Promise<DietaryRecall24h>
+  saveProfessionalService:(input:ProfessionalServiceInput,service?:ProfessionalService)=>Promise<ProfessionalService>
+  saveAppointment:(input:AppointmentInput,appointment?:Appointment,scope?:AppointmentChangeScope)=>Promise<Appointment>
+  cancelAppointment:(appointment:Appointment,scope:AppointmentChangeScope)=>Promise<void>
   refresh: () => Promise<void>
 }
 
-const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [] }
+const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [], professionalServices: [], appointments: [] }
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const defaultDemoRepository = new DemoNutritionRepository()
 
@@ -91,6 +94,9 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
       const saved = await repository.saveDietaryRecall24h(input, recall?.id, recall?.updatedAt)
       await refresh(); return saved
     },
+    async saveProfessionalService(input,service){const saved=await repository.saveProfessionalService(input,service?.id);await refresh();return saved},
+    async saveAppointment(input,appointment,scope='occurrence'){const saved=await repository.saveAppointment(input,appointment?.id,scope,appointment?.updatedAt);await refresh();return saved},
+    async cancelAppointment(appointment,scope){await repository.cancelAppointment(appointment.id,scope,appointment.updatedAt);await refresh()},
   }), [workspace, loading, error, repository])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

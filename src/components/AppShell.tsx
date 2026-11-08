@@ -1,12 +1,13 @@
 import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FlaskConical, HelpCircle, Home, LogOut, Menu, Settings, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
 import { useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
 import type { ProfessionalIdentity } from '../auth/types'
 
 const primaryNavigation = [
   { to: '/', label: 'Início', icon: Home },
   { to: '/pacientes', label: 'Pacientes', icon: Users },
+  { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/avaliacoes', label: 'Avaliações', icon: ClipboardList },
   { to: '/planos', label: 'Planos alimentares', icon: Utensils },
   { to: '/gestao', label: 'Gestão', icon: BarChart3 },
@@ -18,6 +19,7 @@ const pageMeta: Record<string, { title: string; eyebrow: string }> = {
   '/avaliacoes': { title: 'Avaliações', eyebrow: 'Evolução nutricional' },
   '/planos': { title: 'Planos alimentares', eyebrow: 'Planejamento individualizado' },
   '/gestao': { title: 'Gestão', eyebrow: 'Consultório' },
+  '/agenda': { title: 'Agenda', eyebrow: 'Organização profissional' },
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
@@ -74,7 +76,7 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
           <div className="topbar__actions">
             <span className="demo-chip">{mode === 'demo' ? <><FlaskConical size={14} /> Demonstração</> : <><ShieldCheck size={14} /> Supabase</>}</span>
             {identity && identity.memberships.length > 1 && <select className="organization-select" value={organizationId} onChange={(event) => onOrganizationChange?.(event.target.value)} aria-label="Organização ativa">{identity.memberships.map((membership) => <option key={membership.organizationId} value={membership.organizationId}>{membership.organizationName}</option>)}</select>}
-            <button className="quick-calendar" type="button"><CalendarDays size={18} /><span>Agenda</span></button>
+            <Link className="quick-calendar" to="/agenda"><CalendarDays size={18} /><span>Agenda</span></Link>
             <button className="profile-button" type="button" onClick={() => onSignOut && void onSignOut()} aria-label={identity ? 'Encerrar sessão' : 'Perfil de Dra. Marina'}><span>{identity ? identity.email.slice(0, 2).toUpperCase() : 'MM'}</span><div><strong>{identity?.email ?? 'Dra. Marina'}</strong><small>{identity ? 'Profissional verificado' : 'Nutricionista'}</small></div>{identity && <LogOut size={15} />}</button>
           </div>
         </header>

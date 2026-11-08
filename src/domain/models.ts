@@ -173,6 +173,41 @@ export interface DietaryRecall24h {
   updatedAt: string
 }
 
+export interface ProfessionalService {
+  id: string
+  name: string
+  defaultDurationMinutes: number
+  priceCents?: number
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type AppointmentCategory = 'nutrition-consultation' | 'follow-up' | 'lunch-break' | 'personal'
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'canceled' | 'no-show'
+export type RecurrenceFrequency = 'none' | 'weekly' | 'biweekly' | 'monthly'
+export type AppointmentChangeScope = 'occurrence' | 'series'
+
+export interface Appointment {
+  id: string
+  seriesId?: string
+  patientId?: string
+  serviceId?: string
+  professionalId: string
+  professionalLabel: string
+  category: AppointmentCategory
+  status: AppointmentStatus
+  title: string
+  privateTitle: string
+  administrativeNote: string
+  startsAt: string
+  endsAt: string
+  recurrenceFrequency: RecurrenceFrequency
+  recurrenceEndsOn?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NutritionWorkspace {
   patients: PatientAdministrative[]
   clinicalProfiles: PatientClinical[]
@@ -183,6 +218,8 @@ export interface NutritionWorkspace {
   habitCheckIns: HabitCheckIn[]
   nutritionEvaluations: NutritionEvaluation[]
   dietaryRecalls24h: DietaryRecall24h[]
+  professionalServices: ProfessionalService[]
+  appointments: Appointment[]
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
@@ -193,3 +230,5 @@ export type HabitGoalInput = Omit<HabitGoal, 'id' | 'createdAt' | 'updatedAt'>
 export type HabitCheckInInput = Omit<HabitCheckIn, 'id' | 'source' | 'createdAt' | 'updatedAt'>
 export type NutritionEvaluationInput = Omit<NutritionEvaluation, 'id' | 'authorLabel' | 'createdAt' | 'updatedAt'>
 export type DietaryRecall24hInput = Omit<DietaryRecall24h, 'id' | 'authorLabel' | 'createdAt' | 'updatedAt'>
+export type ProfessionalServiceInput = Omit<ProfessionalService, 'id' | 'createdAt' | 'updatedAt'>
+export type AppointmentInput = Omit<Appointment, 'id' | 'seriesId' | 'professionalId' | 'professionalLabel' | 'createdAt' | 'updatedAt'> & { professionalId?: string }

@@ -69,3 +69,11 @@ test('exibe recordatório separado do diário em viewport móvel', async ({ page
   await expect(page.getByText('Pão com ovo — 1 unidade relatada · Café com leite — 1 xícara relatada')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
+
+test('cria agenda pelo horário livre e sinaliza conflito no modo demonstração',async({page})=>{
+  await page.setViewportSize({width:1280,height:900});await page.goto('/agenda');await expect(page.getByRole('heading',{name:'Agenda profissional'})).toBeVisible();await page.getByRole('button',{name:'+ horário livre'}).first().click();await page.getByLabel('Paciente').selectOption('demo-patient-ana');await page.getByRole('button',{name:'Salvar'}).click();await expect(page.getByText('Ana Beatriz Lima').first()).toBeVisible();await page.getByRole('button',{name:'Novo agendamento'}).click();await page.getByLabel('Paciente').selectOption('demo-patient-rafael');await page.getByRole('button',{name:'Salvar'}).click();await expect(page.getByRole('alert')).toContainText('Conflito de horário');await page.getByRole('button',{name:'Fechar'}).click();await page.getByRole('button',{name:'Mês'}).click();await expect(page.locator('.calendar-grid--month')).toBeVisible()
+})
+
+test('mantém agenda diária utilizável no celular',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('/agenda');await page.getByRole('button',{name:'Dia'}).click();await expect(page.locator('.calendar-grid--day')).toBeVisible();await page.getByRole('button',{name:'Novo agendamento'}).click();await expect(page.getByText('Adicionar à agenda')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)})
+
+test('cadastra serviço administrativo na Gestão',async({page})=>{await page.goto('/gestao');await page.getByRole('button',{name:'Novo serviço'}).click();await page.getByLabel('Nome do serviço').fill('Serviço fictício E2E');await page.getByRole('button',{name:'Salvar serviço'}).click();await expect(page.getByText('Serviço fictício E2E')).toBeVisible()})

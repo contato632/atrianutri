@@ -6,6 +6,7 @@ const root = process.cwd()
 const migration = readFileSync(join(root, 'supabase/migrations/20261108122833_atrianutri_foundation.sql'), 'utf8')
 const diaryMigration = readFileSync(join(root, 'supabase/migrations/20261108150000_food_diary_and_habits.sql'), 'utf8')
 const evaluationMigration = readFileSync(join(root, 'supabase/migrations/20261108180000_complete_nutrition_evaluation.sql'), 'utf8')
+const scheduleMigration = readFileSync(join(root, 'supabase/migrations/20261108210000_professional_schedule.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -133,5 +134,40 @@ describe('complete nutrition evaluation migration contract', () => {
   })
   it('remove conteúdo clínico da auditoria',()=>{
     for(const field of ['consultation_reason','health_history','reported_allergies','reported_medications','professional_observations','complementary_notes']) expect(evaluationMigration).toContain(`'${field}'`)
+  })
+})
+
+describe('professional schedule migration contract', () => {
+  const protectedTables = ['professional_services', 'appointment_series', 'appointments', 'appointment_private_details', 'appointment_changes']
+
+  it.each(protectedTables)('habilita RLS em %s', (table) => {
+    expect(scheduleMigration).toContain(`alter table public.${table} enable row level security`)
+  })
+
+  it('impede escrita direta e concentra mutações em RPCs autorizadas', () => {
+    expect(scheduleMigration).toContain('revoke all on public.professional_services,public.appointment_series,public.appointments,public.appointment_private_details,public.appointment_changes from public,anon,authenticated')
+    expect(scheduleMigration).toContain('public.save_professional_service')
+    expect(scheduleMigration).toContain('public.create_appointment_series')
+    expect(scheduleMigration).toContain('public.update_appointment')
+    expect(scheduleMigration).toContain('public.cancel_appointment')
+    expect(scheduleMigration).not.toContain('grant insert on public.appointments')
+    expect(scheduleMigration).not.toContain('grant update on public.appointments')
+  })
+
+  it('garante isolamento organizacional, sigilo pessoal e conflito no PostgreSQL', () => {
+    expect(scheduleMigration).toContain('appointments_professional_no_overlap')
+    expect(scheduleMigration).toContain('exclude using gist')
+    expect(scheduleMigration).toContain('appointment_private_select_owner')
+    expect(scheduleMigration).toContain("m.role in('owner','admin','reception') or m.user_id=p_professional_id")
+    expect(scheduleMigration).toContain("raise exception 'Appointment time conflict' using errcode='23P01'")
+  })
+
+  it('mantém recorrência limitada, auditoria e exclusão lógica por cancelamento', () => {
+    expect(scheduleMigration).toContain('for v_i in 0..103 loop')
+    expect(scheduleMigration).toContain("p_recurrence_ends_on>p_local_start::date+730")
+    expect(scheduleMigration).toContain("change_type in('created','updated','rescheduled','status_changed','canceled')")
+    expect(scheduleMigration).toContain("set status='canceled'")
+    expect(scheduleMigration).not.toContain('drop table')
+    expect(scheduleMigration).not.toContain('truncate')
   })
 })

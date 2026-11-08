@@ -13,6 +13,7 @@
 - versões de rascunho do plano;
 - criação, edição, idempotência e conflito do diário, metas e acompanhamentos;
 - avaliação estruturada, recordatório de 24 horas e evolução consolidada;
+- criação, remarcação, cancelamento, recorrência e conflito de agenda;
 - confirmação server-side e conflitos do adaptador Supabase;
 - restauração de sessão, exigência de MFA, logout e sessão expirada;
 - validação do formulário de paciente;
@@ -22,9 +23,9 @@
 - build TypeScript/Vite de produção.
 - Playwright em Chromium real para desktop 1280×800 e celular 390×844, incluindo ausência de estouro horizontal.
 
-Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, incluindo autor paciente, profissional atribuído, profissional sem vínculo, recepção, notas privadas, avaliações completas e recordatórios. Na variante slim oficial da Supabase CLI 3.0.0, as migrations foram reaplicadas em PostgreSQL 17 e os 86 testes passaram.
+Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, incluindo autor paciente, profissionais simultâneos, recepção, compromissos privados, conflitos de horário, avaliações completas e recordatórios. Na variante slim oficial da Supabase CLI 3.0.0, as quatro migrations foram reaplicadas em PostgreSQL 17 e os 103 testes passaram.
 
-`npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste antropometria, plano, diário, meta, check-in, nota privada, avaliação estruturada e recordatório, confirma que leitura e mutação cruzadas são bloqueadas por RLS e conclui enrollment/verificação TOTP com elevação de sessão.
+`npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste antropometria, plano, diário, meta, check-in, nota privada, avaliação, recordatório, serviço e agendamento. Também confirma conflito temporal, cancelamento lógico e bloqueio cruzado por RLS antes do enrollment/verificação TOTP.
 
 ## Cenários manuais da demonstração
 
@@ -36,6 +37,7 @@ Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, inclu
 6. Adicionar refeição e itens manuais ao plano; salvar e conferir nova versão.
 7. Criar e editar uma entrada do diário e acompanhar uma meta individualizada.
 8. Recarregar a página e confirmar que alterações da sessão desaparecem, como informado.
+9. Criar, remarcar e cancelar compromisso; alternar dia, semana e mês e conferir o filtro profissional.
 
 ## Itens que exigem infraestrutura antes de serem testados
 

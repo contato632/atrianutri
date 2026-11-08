@@ -12,6 +12,7 @@ import { AssessmentsPage } from './pages/AssessmentsPage'
 import { MealPlansPage } from './pages/MealPlansPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { SecurityPage } from './pages/SecurityPage'
+import { AgendaPage } from './pages/AgendaPage'
 import { WorkspaceProvider } from './state/WorkspaceContext'
 import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
 import type { NutritionRepository } from './data/repository'
@@ -38,6 +39,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
             <Route path="avaliacoes" element={<AssessmentsPage />} />
             <Route path="planos" element={<MealPlansPage />} />
             <Route path="gestao" element={<ManagementPage />} />
+            <Route path="agenda" element={<AgendaPage />} />
             {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
