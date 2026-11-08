@@ -3,7 +3,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
-const migration = readFileSync(join(root, 'supabase/migrations/202611080001_atrianutri_foundation.sql'), 'utf8')
+const migration = readFileSync(join(root, 'supabase/migrations/20261108122833_atrianutri_foundation.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {

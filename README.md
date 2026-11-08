@@ -52,7 +52,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration `supabase/migrations/202611080001_atrianutri_foundation.sql` passou em PostgreSQL 17 oficial do Supabase e em 46 testes pgTAP. A aplicação remota permanece pendente enquanto o executor não tiver rede e credencial Supabase verificáveis.
+A migration `supabase/migrations/20261108122833_atrianutri_foundation.sql` passou em PostgreSQL 17 oficial do Supabase e em 46 testes pgTAP. O schema foi aplicado ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026 e registrado na migration remota `20261108122833_atrianutri_foundation`. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 
@@ -74,4 +74,4 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 
 ## Limites de produção
 
-Esta versão não está liberada para pacientes reais. Permanecem pendentes: aplicação e auditoria da migration no projeto remoto, MFA ponta a ponta remoto, política formal de retenção/exclusão, backup e restauração testados, E2E remoto e revisão jurídica/LGPD.
+Esta versão não está liberada para pacientes reais. Permanecem pendentes: MFA e fluxos RLS ponta a ponta remotos com contas fictícias, política formal de retenção/exclusão, backup e restauração testados, E2E remoto e revisão jurídica/LGPD.

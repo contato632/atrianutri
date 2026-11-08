@@ -54,3 +54,17 @@ Nenhuma migration foi aplicada remotamente nesta execução. A auditoria de leit
 2. nenhuma credencial Supabase está configurada no ambiente.
 
 Para prosseguir com segurança, o ambiente precisa permitir `api.supabase.com` e `*.supabase.co` e receber `SUPABASE_ACCESS_TOKEN` por cofre/secret binding. A credencial não deve ser enviada no chat nem adicionada ao repositório.
+
+## Atualização pós-execução — migration remota (08/11/2026)
+
+Após a homologação local descrita acima, a migration inicial foi aplicada por conexão Supabase autorizada, exclusivamente ao projeto `zwnoxycxhlihqxhutlcy`.
+
+- Versão registrada pelo Supabase remoto: `20261108122833` (`atrianutri_foundation`).
+- O nome do arquivo versionado no repositório foi sincronizado com essa versão, sem modificar o SQL da migration aplicada.
+- Inventário remoto verificado: **10 tabelas com RLS**, **23 políticas**, **11 funções**, **15 triggers**.
+- Não havia usuários Auth nem pacientes cadastrados; `anon` não possui grants sobre tabelas do aplicativo.
+- Advisor de segurança: alerta `authenticated_security_definer_function_executable` relativo a funções `SECURITY DEFINER` executáveis por usuários autenticados. A implementação utiliza RPCs intencionais e valida o ator por `auth.uid()`; mesmo assim, manter a revisão manual e os testes remotos do contrato de acesso como pendência de homologação.
+- Advisors de desempenho: informações sobre FKs sem índices de cobertura e índices ainda não utilizados (banco vazio).
+- Não foi realizado teste E2E remoto com usuários fictícios, nem backup/restauração do novo banco.
+- O modo demonstração e o bloqueio `VITE_REAL_DATA_APPROVED=false` permanecem inalterados.
+- PR #1 permanece sem merge, e nenhum deploy de aplicativo foi solicitado.
