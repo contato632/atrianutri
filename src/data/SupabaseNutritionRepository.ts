@@ -3,6 +3,13 @@ import type {
   Assessment,
   AssessmentInput,
   ClinicalProfileInput,
+  FoodDiaryEntry,
+  FoodDiaryEntryInput,
+  FoodDiaryMealType,
+  HabitCheckIn,
+  HabitCheckInInput,
+  HabitGoal,
+  HabitGoalInput,
   Meal,
   MealPlan,
   NutritionWorkspace,
@@ -36,6 +43,10 @@ function requireData<T>(data: T | null, error: QueryError, fallback: string): T 
 
 const toDatabaseStatus = (status: PatientStatus) => status === 'follow-up' ? 'follow_up' : status
 const fromDatabaseStatus = (status: string): PatientStatus => status === 'follow_up' ? 'follow-up' : status as PatientStatus
+const toDatabaseMealType = (value: FoodDiaryMealType) => value.replaceAll('-', '_')
+const fromDatabaseMealType = (value: string) => value.replaceAll('_', '-') as FoodDiaryMealType
+const toDatabaseProgress = (value: HabitCheckInInput['progress']) => value.replaceAll('-', '_')
+const fromDatabaseProgress = (value: string) => value.replaceAll('_', '-') as HabitCheckIn['progress']
 
 function decodeMeals(value: unknown): Meal[] {
   if (!Array.isArray(value)) throw new Error('O servidor retornou uma versão de plano inválida.')
@@ -76,12 +87,16 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   }
 
   async snapshot(): Promise<NutritionWorkspace> {
-    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult] = await Promise.all([
+    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult] = await Promise.all([
       this.client.from('patients_administrative').select('id,full_name,birth_date,phone,email,status,next_appointment_at,created_at').eq('organization_id', this.organizationId).is('archived_at', null).order('full_name'),
       this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
       this.client.from('meal_plans').select('id,patient_id,title,status,current_version,updated_at').eq('organization_id', this.organizationId).neq('status', 'archived').order('updated_at', { ascending: false }),
       this.client.from('meal_plan_versions').select('meal_plan_id,version,meals,change_summary,created_at').eq('organization_id', this.organizationId).order('version', { ascending: false }),
+      this.client.from('food_diary_entries').select('id,patient_id,entry_date,meal_time,meal_type,foods,notes,eating_context,hunger_before,satiety_after,routine_changes,source,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('entry_date', { ascending: false }).order('meal_time', { ascending: false }),
+      this.client.from('habit_goals').select('id,patient_id,title,description,status,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('updated_at', { ascending: false }),
+      this.client.from('habit_check_ins').select('id,habit_goal_id,patient_id,recorded_on,progress,notes,difficulties,next_step,source,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('recorded_on', { ascending: false }),
+      this.client.from('clinical_private_notes').select('food_diary_entry_id,habit_goal_id,habit_check_in_id,content').eq('organization_id', this.organizationId),
     ])
 
     const patientRows = requireData(patientResult.data, patientResult.error, 'Não foi possível carregar os pacientes.')
@@ -89,6 +104,11 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const assessmentRows = requireData(assessmentResult.data, assessmentResult.error, 'Não foi possível carregar as avaliações.')
     const planRows = requireData(planResult.data, planResult.error, 'Não foi possível carregar os planos alimentares.')
     const versionRows = requireData(versionResult.data, versionResult.error, 'Não foi possível carregar as versões dos planos.')
+    const diaryRows = requireData(diaryResult.data, diaryResult.error, 'Não foi possível carregar o diário alimentar.')
+    const goalRows = requireData(goalResult.data, goalResult.error, 'Não foi possível carregar as metas de hábitos.')
+    const checkInRows = requireData(checkInResult.data, checkInResult.error, 'Não foi possível carregar o acompanhamento de hábitos.')
+    const privateNoteRows = requireData(privateNoteResult.data, privateNoteResult.error, 'Não foi possível carregar as observações profissionais.')
+    const privateNote = (field: 'food_diary_entry_id' | 'habit_goal_id' | 'habit_check_in_id', id: unknown) => String(privateNoteRows.find((row) => row[field] === id)?.content ?? '')
 
     const patients: PatientAdministrative[] = patientRows.map((row) => ({
       id: String(row.id),
@@ -141,7 +161,24 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       }
     })
 
-    return { patients, clinicalProfiles, assessments, mealPlans }
+    const foodDiaryEntries: FoodDiaryEntry[] = diaryRows.map((row) => ({
+      id: String(row.id), patientId: String(row.patient_id), entryDate: String(row.entry_date), mealTime: String(row.meal_time).slice(0, 5),
+      mealType: fromDatabaseMealType(String(row.meal_type)), foods: decodeMeals([{ foods: row.foods }])[0].foods,
+      notes: String(row.notes ?? ''), eatingContext: String(row.eating_context ?? ''), hungerBefore: String(row.hunger_before ?? ''), satietyAfter: String(row.satiety_after ?? ''), routineChanges: String(row.routine_changes ?? ''),
+      source: row.source === 'patient' ? 'patient' : 'professional', sharedWithPatient: Boolean(row.shared_with_patient_at), professionalPrivateNote: privateNote('food_diary_entry_id', row.id),
+      submissionKey: String(row.submission_key), createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+    }))
+    const habitGoals: HabitGoal[] = goalRows.map((row) => ({
+      id: String(row.id), patientId: String(row.patient_id), title: String(row.title), description: String(row.description ?? ''), status: row.status as HabitGoal['status'],
+      sharedWithPatient: Boolean(row.shared_with_patient_at), professionalPrivateNote: privateNote('habit_goal_id', row.id), submissionKey: String(row.submission_key), createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+    }))
+    const habitCheckIns: HabitCheckIn[] = checkInRows.map((row) => ({
+      id: String(row.id), goalId: String(row.habit_goal_id), patientId: String(row.patient_id), recordedOn: String(row.recorded_on), progress: fromDatabaseProgress(String(row.progress)),
+      notes: String(row.notes ?? ''), difficulties: String(row.difficulties ?? ''), nextStep: String(row.next_step ?? ''), source: row.source === 'patient' ? 'patient' : 'professional',
+      sharedWithPatient: Boolean(row.shared_with_patient_at), professionalPrivateNote: privateNote('habit_check_in_id', row.id), submissionKey: String(row.submission_key), createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+    }))
+
+    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns }
   }
 
   async createPatient(input: PatientInput) {
@@ -273,5 +310,41 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       updatedAt: String(result.saved_at),
       revisions: [...plan.revisions, { version: Number(result.saved_version), savedAt: String(result.saved_at), summary }],
     }
+  }
+
+  async saveFoodDiaryEntry(input: FoodDiaryEntryInput, entryId?: string, expectedUpdatedAt?: string) {
+    const { data, error } = await this.client.rpc('save_food_diary_entry', {
+      p_organization_id: this.organizationId, p_patient_id: input.patientId, p_entry_date: input.entryDate, p_meal_time: input.mealTime,
+      p_meal_type: toDatabaseMealType(input.mealType), p_foods: input.foods, p_notes: input.notes, p_eating_context: input.eatingContext,
+      p_hunger_before: input.hungerBefore, p_satiety_after: input.satietyAfter, p_routine_changes: input.routineChanges,
+      p_shared_with_patient: input.sharedWithPatient, p_private_note: input.professionalPrivateNote, p_submission_key: input.submissionKey,
+      p_entry_id: entryId ?? null, p_expected_updated_at: expectedUpdatedAt ?? null,
+    })
+    const confirmation = requireData(Array.isArray(data) ? data[0] : data, error, 'O diário alimentar não foi confirmado pelo servidor.')
+    if (!confirmation?.saved_id || !confirmation.saved_updated_at) throw new Error('O servidor não confirmou o registro do diário.')
+    return { ...structuredClone(input), id: String(confirmation.saved_id), source: 'professional' as const, createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
+  }
+
+  async saveHabitGoal(input: HabitGoalInput, goalId?: string, expectedUpdatedAt?: string) {
+    const { data, error } = await this.client.rpc('save_habit_goal', {
+      p_organization_id: this.organizationId, p_patient_id: input.patientId, p_title: input.title, p_description: input.description,
+      p_status: input.status, p_shared_with_patient: input.sharedWithPatient, p_private_note: input.professionalPrivateNote,
+      p_submission_key: input.submissionKey, p_goal_id: goalId ?? null, p_expected_updated_at: expectedUpdatedAt ?? null,
+    })
+    const confirmation = requireData(Array.isArray(data) ? data[0] : data, error, 'A meta de hábito não foi confirmada pelo servidor.')
+    if (!confirmation?.saved_id || !confirmation.saved_updated_at) throw new Error('O servidor não confirmou a meta de hábito.')
+    return { ...structuredClone(input), id: String(confirmation.saved_id), createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
+  }
+
+  async saveHabitCheckIn(input: HabitCheckInInput, checkInId?: string, expectedUpdatedAt?: string) {
+    const { data, error } = await this.client.rpc('save_habit_check_in', {
+      p_organization_id: this.organizationId, p_patient_id: input.patientId, p_habit_goal_id: input.goalId, p_recorded_on: input.recordedOn,
+      p_progress: toDatabaseProgress(input.progress), p_notes: input.notes, p_difficulties: input.difficulties, p_next_step: input.nextStep,
+      p_shared_with_patient: input.sharedWithPatient, p_private_note: input.professionalPrivateNote, p_submission_key: input.submissionKey,
+      p_check_in_id: checkInId ?? null, p_expected_updated_at: expectedUpdatedAt ?? null,
+    })
+    const confirmation = requireData(Array.isArray(data) ? data[0] : data, error, 'O acompanhamento de hábito não foi confirmado pelo servidor.')
+    if (!confirmation?.saved_id || !confirmation.saved_updated_at) throw new Error('O servidor não confirmou o acompanhamento de hábito.')
+    return { ...structuredClone(input), id: String(confirmation.saved_id), source: 'professional' as const, createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
   }
 }

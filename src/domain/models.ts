@@ -66,13 +66,81 @@ export interface MealPlan {
   revisions: PlanRevision[]
 }
 
+export type FoodDiaryMealType = 'breakfast' | 'morning-snack' | 'lunch' | 'afternoon-snack' | 'dinner' | 'evening-snack' | 'other'
+export type ClinicalRecordSource = 'patient' | 'professional'
+
+export interface FoodDiaryItem {
+  id: string
+  name: string
+  quantity: string
+}
+
+export interface FoodDiaryEntry {
+  id: string
+  patientId: string
+  entryDate: string
+  mealTime: string
+  mealType: FoodDiaryMealType
+  foods: FoodDiaryItem[]
+  notes: string
+  eatingContext: string
+  hungerBefore: string
+  satietyAfter: string
+  routineChanges: string
+  source: ClinicalRecordSource
+  sharedWithPatient: boolean
+  professionalPrivateNote: string
+  submissionKey: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type HabitGoalStatus = 'active' | 'paused' | 'completed'
+export type HabitProgress = 'progressing' | 'maintaining' | 'difficulty' | 'not-observed'
+
+export interface HabitGoal {
+  id: string
+  patientId: string
+  title: string
+  description: string
+  status: HabitGoalStatus
+  sharedWithPatient: boolean
+  professionalPrivateNote: string
+  submissionKey: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HabitCheckIn {
+  id: string
+  goalId: string
+  patientId: string
+  recordedOn: string
+  progress: HabitProgress
+  notes: string
+  difficulties: string
+  nextStep: string
+  source: ClinicalRecordSource
+  sharedWithPatient: boolean
+  professionalPrivateNote: string
+  submissionKey: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NutritionWorkspace {
   patients: PatientAdministrative[]
   clinicalProfiles: PatientClinical[]
   assessments: Assessment[]
   mealPlans: MealPlan[]
+  foodDiaryEntries: FoodDiaryEntry[]
+  habitGoals: HabitGoal[]
+  habitCheckIns: HabitCheckIn[]
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
 export type ClinicalProfileInput = Pick<PatientClinical, 'goal' | 'foodHistory' | 'habits' | 'professionalNotes'>
 export type AssessmentInput = Omit<Assessment, 'id' | 'bmi' | 'createdAt'>
+export type FoodDiaryEntryInput = Omit<FoodDiaryEntry, 'id' | 'source' | 'createdAt' | 'updatedAt'>
+export type HabitGoalInput = Omit<HabitGoal, 'id' | 'createdAt' | 'updatedAt'>
+export type HabitCheckInInput = Omit<HabitCheckIn, 'id' | 'source' | 'createdAt' | 'updatedAt'>

@@ -52,3 +52,26 @@ describe('SupabaseNutritionRepository clinical profile', () => {
     expect(eq).toHaveBeenCalledWith('updated_at', '2026-11-08T13:00:00Z')
   })
 })
+
+describe('SupabaseNutritionRepository diary and habits', () => {
+  const entry = { patientId: 'patient-1', entryDate: '2026-11-08', mealTime: '12:00', mealType: 'lunch' as const, foods: [{ id: 'food-1', name: 'Refeição fictícia', quantity: '' }], notes: '', eatingContext: '', hungerBefore: '', satietyAfter: '', routineChanges: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '30000000-0000-4000-8000-000000000001' }
+
+  it('só confirma o diário com id e timestamp retornados pela RPC', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [{ saved_id: 'entry-server', saved_updated_at: '2026-11-08T14:00:00Z' }], error: null })
+    const saved = await new SupabaseNutritionRepository(clientWithRpc(rpc), 'org-1').saveFoodDiaryEntry(entry)
+    expect(rpc).toHaveBeenCalledWith('save_food_diary_entry', expect.objectContaining({ p_organization_id: 'org-1', p_patient_id: 'patient-1', p_entry_id: null }))
+    expect(saved).toEqual(expect.objectContaining({ id: 'entry-server', updatedAt: '2026-11-08T14:00:00Z' }))
+  })
+
+  it('propaga conflito otimista de meta sem informar sucesso', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: '40001', message: 'conflict' } })
+    const repository = new SupabaseNutritionRepository(clientWithRpc(rpc), 'org-1')
+    await expect(repository.saveHabitGoal({ patientId: 'patient-1', title: 'Meta fictícia', description: '', status: 'active', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '30000000-0000-4000-8000-000000000002' }, 'goal-1', '2026-11-08T10:00:00Z')).rejects.toBeInstanceOf(RepositoryConflictError)
+  })
+
+  it('não confirma check-in quando a RPC não retorna identificação', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: [], error: null })
+    const repository = new SupabaseNutritionRepository(clientWithRpc(rpc), 'org-1')
+    await expect(repository.saveHabitCheckIn({ patientId: 'patient-1', goalId: 'goal-1', recordedOn: '2026-11-08', progress: 'difficulty', notes: '', difficulties: 'Turno alterado', nextStep: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '30000000-0000-4000-8000-000000000003' })).rejects.toThrow('não confirmou')
+  })
+})

@@ -148,6 +148,82 @@ const planResult = await request('/rest/v1/rpc/create_meal_plan_draft', {
 const plan = Array.isArray(planResult) ? planResult[0] : planResult
 assert(plan?.saved_plan_id && Number(plan.saved_version) === 1, 'plano não recebeu confirmação transacional')
 
+const diaryResult = await request('/rest/v1/rpc/save_food_diary_entry', {
+  method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationA,
+    p_patient_id: patientA.id,
+    p_entry_date: '2026-11-08',
+    p_meal_time: '12:30',
+    p_meal_type: 'lunch',
+    p_foods: [{ id: randomUUID(), name: 'Refeição fictícia de integração', quantity: 'Porção informada' }],
+    p_notes: 'Somente dados fictícios.',
+    p_eating_context: 'Contexto de teste local.',
+    p_hunger_before: '',
+    p_satiety_after: '',
+    p_routine_changes: '',
+    p_shared_with_patient: false,
+    p_private_note: 'Observação privada fictícia.',
+    p_submission_key: randomUUID(),
+  },
+})
+const diary = Array.isArray(diaryResult) ? diaryResult[0] : diaryResult
+assert(diary?.saved_id && diary?.saved_updated_at, 'diário não recebeu confirmação transacional')
+
+const goalResult = await request('/rest/v1/rpc/save_habit_goal', {
+  method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationA,
+    p_patient_id: patientA.id,
+    p_title: 'Observar a rotina fictícia',
+    p_description: 'Meta individualizada usada somente no teste local.',
+    p_status: 'active',
+    p_shared_with_patient: false,
+    p_private_note: '',
+    p_submission_key: randomUUID(),
+  },
+})
+const goal = Array.isArray(goalResult) ? goalResult[0] : goalResult
+assert(goal?.saved_id && goal?.saved_updated_at, 'meta não recebeu confirmação transacional')
+
+const checkInResult = await request('/rest/v1/rpc/save_habit_check_in', {
+  method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationA,
+    p_patient_id: patientA.id,
+    p_habit_goal_id: goal.saved_id,
+    p_recorded_on: '2026-11-08',
+    p_progress: 'not_observed',
+    p_notes: 'Acompanhamento fictício.',
+    p_difficulties: '',
+    p_next_step: 'Observar sem julgamento.',
+    p_shared_with_patient: false,
+    p_private_note: '',
+    p_submission_key: randomUUID(),
+  },
+})
+const checkIn = Array.isArray(checkInResult) ? checkInResult[0] : checkInResult
+assert(checkIn?.saved_id && checkIn?.saved_updated_at, 'acompanhamento não recebeu confirmação transacional')
+
+const [diaryRows, goalRows, checkInRows, privateNoteRows] = await Promise.all([
+  request(`/rest/v1/food_diary_entries?select=id&patient_id=eq.${patientA.id}`, { token: tokenA }),
+  request(`/rest/v1/habit_goals?select=id&patient_id=eq.${patientA.id}`, { token: tokenA }),
+  request(`/rest/v1/habit_check_ins?select=id&patient_id=eq.${patientA.id}`, { token: tokenA }),
+  request(`/rest/v1/clinical_private_notes?select=id&patient_id=eq.${patientA.id}`, { token: tokenA }),
+])
+assert(diaryRows.length === 1 && goalRows.length === 1 && checkInRows.length === 1 && privateNoteRows.length === 1, 'diário e hábitos não foram persistidos com nota privada separada')
+
+let crossDiaryDenied = false
+try {
+  await request('/rest/v1/rpc/save_food_diary_entry', {
+    method: 'POST', token: tokenA, body: {
+      p_organization_id: organizationB, p_patient_id: patientB, p_entry_date: '2026-11-08', p_meal_time: '10:00',
+      p_meal_type: 'other', p_foods: [{ name: 'Tentativa cruzada' }], p_notes: '', p_eating_context: '', p_hunger_before: '',
+      p_satiety_after: '', p_routine_changes: '', p_shared_with_patient: false, p_private_note: '', p_submission_key: randomUUID(),
+    },
+  })
+} catch (error) {
+  crossDiaryDenied = error instanceof Error && error.message.includes('403')
+}
+assert(crossDiaryDenied, 'RPC do diário não bloqueou escrita em outra organização')
+
 const factor = await request('/auth/v1/factors', {
   method: 'POST', token: tokenA, body: { factor_type: 'totp', friendly_name: `Integração ${suffix}` },
 })
@@ -166,5 +242,7 @@ console.log('PASS: leitura isolada entre duas organizações')
 console.log('PASS: mutação cruzada bloqueada por RLS')
 console.log('PASS: avaliação persistida com IMC gerado pelo PostgreSQL')
 console.log('PASS: plano e primeira versão persistidos atomicamente')
+console.log('PASS: diário, meta, acompanhamento e nota privada persistidos por RPC')
+console.log('PASS: escrita cruzada do diário bloqueada entre organizações')
 console.log('PASS: enrollment e verificação TOTP elevaram a sessão')
 console.log('PASS: nenhum dado ou token real foi utilizado')

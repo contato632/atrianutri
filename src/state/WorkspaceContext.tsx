@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AssessmentInput, ClinicalProfileInput, MealPlan, NutritionWorkspace, PatientInput } from '../domain/models'
+import type { AssessmentInput, ClinicalProfileInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionWorkspace, PatientInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -11,10 +11,13 @@ type WorkspaceContextValue = {
   saveClinicalProfile: (patientId: string, input: ClinicalProfileInput, expectedUpdatedAt?: string) => Promise<void>
   createAssessment: (input: AssessmentInput) => Promise<void>
   saveMealPlan: (plan: MealPlan, summary: string) => Promise<MealPlan>
+  saveFoodDiaryEntry: (input: FoodDiaryEntryInput, entry?: FoodDiaryEntry) => Promise<FoodDiaryEntry>
+  saveHabitGoal: (input: HabitGoalInput, goal?: HabitGoal) => Promise<HabitGoal>
+  saveHabitCheckIn: (input: HabitCheckInInput, checkIn?: HabitCheckIn) => Promise<HabitCheckIn>
   refresh: () => Promise<void>
 }
 
-const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [] }
+const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [] }
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const defaultDemoRepository = new DemoNutritionRepository()
 
@@ -60,6 +63,21 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     },
     async saveMealPlan(plan, summary) {
       const saved = await repository.saveMealPlan(plan, summary)
+      await refresh()
+      return saved
+    },
+    async saveFoodDiaryEntry(input, entry) {
+      const saved = await repository.saveFoodDiaryEntry(input, entry?.id, entry?.updatedAt)
+      await refresh()
+      return saved
+    },
+    async saveHabitGoal(input, goal) {
+      const saved = await repository.saveHabitGoal(input, goal?.id, goal?.updatedAt)
+      await refresh()
+      return saved
+    },
+    async saveHabitCheckIn(input, checkIn) {
+      const saved = await repository.saveHabitCheckIn(input, checkIn?.id, checkIn?.updatedAt)
       await refresh()
       return saved
     },

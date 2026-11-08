@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = process.cwd()
 const migration = readFileSync(join(root, 'supabase/migrations/20261108122833_atrianutri_foundation.sql'), 'utf8')
+const diaryMigration = readFileSync(join(root, 'supabase/migrations/20261108150000_food_diary_and_habits.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -83,5 +84,37 @@ describe('migration security contract', () => {
     expect(migration).toContain("user_id <> (select auth.uid())")
     expect(migration).toContain("and role <> 'owner'")
     expect(migration).toContain("array['owner']::public.organization_role[]")
+  })
+})
+
+describe('food diary and habits migration contract', () => {
+  const protectedTables = ['food_diary_entries', 'habit_goals', 'habit_check_ins', 'clinical_private_notes']
+
+  it.each(protectedTables)('habilita RLS em %s', (table) => {
+    expect(diaryMigration).toContain(`alter table public.${table} enable row level security`)
+  })
+
+  it('separa observações privadas e não concede escrita clínica direta ao frontend', () => {
+    expect(diaryMigration).toContain('num_nonnulls(food_diary_entry_id, habit_goal_id, habit_check_in_id) = 1')
+    expect(diaryMigration).toContain('revoke all on public.food_diary_entries, public.habit_goals, public.habit_check_ins, public.clinical_private_notes from public, anon, authenticated')
+    expect(diaryMigration).not.toContain('grant insert on public.food_diary_entries to authenticated')
+    expect(diaryMigration).not.toContain('grant update on public.clinical_private_notes to authenticated')
+  })
+
+  it('usa RPCs transacionais, idempotência e conflito otimista', () => {
+    expect(diaryMigration).toContain('public.save_food_diary_entry')
+    expect(diaryMigration).toContain('public.save_habit_goal')
+    expect(diaryMigration).toContain('public.save_habit_check_in')
+    expect(diaryMigration).toContain('submission_key')
+    expect(diaryMigration).toContain("using errcode = '40001'")
+    expect(diaryMigration).toContain('Patients can only edit their own entries')
+    expect(diaryMigration).toContain('Patients can only edit their own check-ins')
+    expect(diaryMigration).toContain('Habit goal is not shared with the patient')
+  })
+
+  it('não inclui conteúdo sensível no metadado de auditoria', () => {
+    for (const field of ['foods', 'eating_context', 'hunger_before', 'satiety_after', 'routine_changes', 'difficulties', 'next_step', 'content']) {
+      expect(diaryMigration).toMatch(new RegExp(`'${field}'`))
+    }
   })
 })

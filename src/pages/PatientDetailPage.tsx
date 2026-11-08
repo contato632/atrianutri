@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { LoadingState } from '../components/LoadingState'
 import { Modal } from '../components/Modal'
 import { AnamnesisForm } from '../components/AnamnesisForm'
+import { FoodDiaryPanel } from '../components/FoodDiaryPanel'
 import { PatientForm } from '../components/PatientForm'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
@@ -62,6 +63,8 @@ export function PatientDetailPage() {
           <Link className="text-button detail-link" to="/planos"><Utensils size={15} /> {plan ? 'Abrir plano' : 'Criar plano manual'}</Link>
         </section>
       </div>
+
+      <FoodDiaryPanel patientId={patient.id} />
 
       {editingClinical && <Modal title="Anamnese nutricional" eyebrow="Registro clínico restrito" onClose={() => setEditingClinical(false)} size="large">
         <AnamnesisForm profile={clinical} onCancel={() => setEditingClinical(false)} onSubmit={async (input, expectedUpdatedAt) => {

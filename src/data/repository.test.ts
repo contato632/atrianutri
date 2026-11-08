@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MealPlan, NutritionWorkspace } from '../domain/models'
 import { DemoNutritionRepository } from './repository'
 
-const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [] }
+const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [] }
 
 describe('DemoNutritionRepository', () => {
   it('cria e edita paciente sem misturar o perfil clínico no cadastro', async () => {
@@ -41,5 +41,29 @@ describe('DemoNutritionRepository', () => {
     const second = await repository.saveMealPlan({ ...first, title: 'Plano ajustado' }, 'Ajuste')
     expect(second.version).toBe(2)
     expect(second.revisions.map((item) => item.summary)).toEqual(['Criação', 'Ajuste'])
+  })
+
+  it('cria e edita diário, meta e acompanhamento sem perder o vínculo do paciente', async () => {
+    const repository = new DemoNutritionRepository(empty)
+    const patient = await repository.createPatient({ fullName: 'Paciente Diário', birthDate: '1992-03-02', phone: '(11) 90000-0000', email: 'diario@demo.local', status: 'active' })
+    const entry = await repository.saveFoodDiaryEntry({ patientId: patient.id, entryDate: '2026-11-07', mealTime: '12:30', mealType: 'lunch', foods: [{ id: 'food-1', name: 'Arroz e feijão', quantity: 'Porção informada' }], notes: '', eatingContext: 'Em casa', hungerBefore: '', satietyAfter: '', routineChanges: '', sharedWithPatient: false, professionalPrivateNote: 'Nota privada fictícia', submissionKey: '10000000-0000-4000-8000-000000000001' })
+    const edited = await repository.saveFoodDiaryEntry({ ...entry, notes: 'Relato atualizado' }, entry.id, entry.updatedAt)
+    const goal = await repository.saveHabitGoal({ patientId: patient.id, title: 'Organizar o lanche da tarde', description: 'Meta combinada no contexto fictício', status: 'active', sharedWithPatient: true, professionalPrivateNote: '', submissionKey: '10000000-0000-4000-8000-000000000002' })
+    await repository.saveHabitCheckIn({ patientId: patient.id, goalId: goal.id, recordedOn: '2026-11-08', progress: 'not-observed', notes: '', difficulties: 'Mudança de turno', nextStep: 'Observar a rotina', sharedWithPatient: true, professionalPrivateNote: '', submissionKey: '10000000-0000-4000-8000-000000000003' })
+
+    const snapshot = await repository.snapshot()
+    expect(edited.notes).toBe('Relato atualizado')
+    expect(snapshot.foodDiaryEntries).toHaveLength(1)
+    expect(snapshot.habitGoals[0].patientId).toBe(patient.id)
+    expect(snapshot.habitCheckIns[0]).toEqual(expect.objectContaining({ patientId: patient.id, goalId: goal.id }))
+  })
+
+  it('impede overwrite otimista e check-in em meta de outro paciente', async () => {
+    const repository = new DemoNutritionRepository(empty)
+    const first = await repository.createPatient({ fullName: 'Paciente Um', birthDate: '1990-01-01', phone: '(11) 90000-0001', email: 'um@demo.local', status: 'active' })
+    const second = await repository.createPatient({ fullName: 'Paciente Dois', birthDate: '1991-01-01', phone: '(11) 90000-0002', email: 'dois@demo.local', status: 'active' })
+    const goal = await repository.saveHabitGoal({ patientId: first.id, title: 'Meta do primeiro paciente', description: '', status: 'active', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '20000000-0000-4000-8000-000000000001' })
+    await expect(repository.saveHabitGoal({ ...goal, title: 'Tentativa concorrente' }, goal.id, 'timestamp-antigo')).rejects.toThrow('outra sessão')
+    await expect(repository.saveHabitCheckIn({ patientId: second.id, goalId: goal.id, recordedOn: '2026-11-08', progress: 'difficulty', notes: '', difficulties: '', nextStep: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '20000000-0000-4000-8000-000000000002' })).rejects.toThrow('não encontrada')
   })
 })

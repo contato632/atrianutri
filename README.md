@@ -15,6 +15,7 @@ Esta branch contém uma demonstração vertical navegável em português brasile
 - políticas RLS, grants mínimos, vínculo profissional–paciente e auditoria de alterações sensíveis;
 - Auth profissional integrado com login, recuperação, troca de senha, sessão em memória e TOTP/MFA;
 - `SupabaseNutritionRepository` conectado ao bootstrap da aplicação, atrás de bloqueio de homologação;
+- diário alimentar contextual e acompanhamento de hábitos/metas no prontuário;
 - testes unitários, de componentes e contratos de segurança.
 
 Os dados exibidos são fictícios. No modo padrão `demo`, as alterações vivem apenas na memória e desaparecem ao recarregar. O modo Supabase exige configuração explícita, valida o Project Ref e mantém os dados reais bloqueados até a homologação remota de RLS, backup e restauração.
@@ -52,7 +53,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration `supabase/migrations/20261108122833_atrianutri_foundation.sql` passou em PostgreSQL 17 oficial do Supabase e em 46 testes pgTAP. O schema foi aplicado ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026 e registrado na migration remota `20261108122833_atrianutri_foundation`. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
+A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. A nova migration `20261108150000_food_diary_and_habits.sql` está somente versionada e validada localmente; **não foi aplicada remotamente**. As duas migrations passaram juntas em PostgreSQL 17 oficial do Supabase e em 70 testes pgTAP. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 
@@ -71,6 +72,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Qualidade e escopo de homologação](docs/QUALIDADE.md)
 - [Etapa 02 — auditoria RLS e homologação](docs/ETAPA_02_SEGURANCA.md)
 - [Etapa 03 — integração Supabase](docs/ETAPA_03_INTEGRACAO_SUPABASE.md)
+- [Etapa 05 — diário alimentar e hábitos](docs/ETAPA_05_DIARIO_HABITOS.md)
 
 ## Limites de produção
 

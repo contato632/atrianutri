@@ -27,17 +27,22 @@ A migration versionada separa:
 - `meal_plans`: cabeçalho e estado do plano;
 - `meal_plan_versions`: snapshots imutáveis das refeições em JSON;
 - `audit_events`: metadados mínimos de alterações.
+- `food_diary_entries`: refeições e contexto alimentar, com autoria do paciente ou profissional;
+- `habit_goals` e `habit_check_ins`: metas individualizadas e evolução qualitativa;
+- `clinical_private_notes`: conteúdo profissional privado separado das linhas compartilháveis.
 
 Toda entidade sensível possui `organization_id` direto ou por chave composta. A chave composta entre paciente e organização impede vínculos acidentais com registros de outra clínica.
 
 As versões de plano usam uma chave estrangeira composta com plano, organização e paciente. A gravação ocorre por RPC com bloqueio de linha e versão esperada, garantindo incremento atômico e detecção de concorrência.
+
+Diário e hábitos também usam chaves compostas, submissão idempotente e RPCs transacionais. O conteúdo potencialmente visível ao paciente e a observação privada nunca ocupam a mesma linha. O frontend autenticado não recebe grants de escrita direta nessas quatro tabelas.
 
 ## Autorização proposta
 
 - `owner` e `admin`: gestão administrativa da organização;
 - `reception`: cadastro e contato, sem acesso clínico;
 - `nutritionist`: acesso clínico somente quando `clinical_access=true` e houver atribuição ativa ao paciente;
-- paciente autenticado: leitura do próprio cadastro e, futuramente, somente avaliações compartilhadas e versão ativa do plano;
+- paciente autenticado: leitura do próprio cadastro, avaliações/planos compartilhados, entradas próprias e conteúdo de diário/hábitos explicitamente compartilhado; nunca lê observações privadas;
 - `anon`: nenhum acesso às tabelas.
 
 As políticas são separadas por operação. O frontend melhora a experiência, mas a fronteira de autorização está no PostgreSQL/RLS.

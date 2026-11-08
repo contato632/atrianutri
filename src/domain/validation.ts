@@ -27,3 +27,48 @@ export const assessmentSchema = z.object({
   bodyFatPercentage: z.number().min(1).max(80).optional(),
   notes: z.string().trim().max(2000),
 })
+
+const diaryItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1, 'Informe o alimento ou preparação.').max(300),
+  quantity: z.string().trim().max(200),
+})
+
+export const foodDiaryEntrySchema = z.object({
+  patientId: z.string().min(1),
+  entryDate: z.string().date('Informe uma data válida.'),
+  mealTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Informe um horário válido.'),
+  mealType: z.enum(['breakfast', 'morning-snack', 'lunch', 'afternoon-snack', 'dinner', 'evening-snack', 'other']),
+  foods: z.array(diaryItemSchema).min(1, 'Adicione pelo menos um alimento ou preparação.').max(50),
+  notes: z.string().trim().max(4000),
+  eatingContext: z.string().trim().max(2000),
+  hungerBefore: z.string().trim().max(500),
+  satietyAfter: z.string().trim().max(500),
+  routineChanges: z.string().trim().max(4000),
+  sharedWithPatient: z.boolean(),
+  professionalPrivateNote: z.string().trim().max(4000),
+  submissionKey: z.string().uuid(),
+})
+
+export const habitGoalSchema = z.object({
+  patientId: z.string().min(1),
+  title: z.string().trim().min(3, 'Descreva o hábito individualizado.').max(200),
+  description: z.string().trim().max(4000),
+  status: z.enum(['active', 'paused', 'completed']),
+  sharedWithPatient: z.boolean(),
+  professionalPrivateNote: z.string().trim().max(4000),
+  submissionKey: z.string().uuid(),
+})
+
+export const habitCheckInSchema = z.object({
+  goalId: z.string().min(1),
+  patientId: z.string().min(1),
+  recordedOn: z.string().date('Informe uma data válida.'),
+  progress: z.enum(['progressing', 'maintaining', 'difficulty', 'not-observed']),
+  notes: z.string().trim().max(4000),
+  difficulties: z.string().trim().max(4000),
+  nextStep: z.string().trim().max(2000),
+  sharedWithPatient: z.boolean(),
+  professionalPrivateNote: z.string().trim().max(4000),
+  submissionKey: z.string().uuid(),
+})
