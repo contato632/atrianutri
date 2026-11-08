@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   Assessment,
   AssessmentInput,
+  ClinicalProfileInput,
   Meal,
   MealPlan,
   NutritionWorkspace,
@@ -77,7 +78,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   async snapshot(): Promise<NutritionWorkspace> {
     const [patientResult, clinicalResult, assessmentResult, planResult, versionResult] = await Promise.all([
       this.client.from('patients_administrative').select('id,full_name,birth_date,phone,email,status,next_appointment_at,created_at').eq('organization_id', this.organizationId).is('archived_at', null).order('full_name'),
-      this.client.from('patient_clinical_profiles').select('patient_id,goal,professional_notes,updated_at').eq('organization_id', this.organizationId),
+      this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
       this.client.from('meal_plans').select('id,patient_id,title,status,current_version,updated_at').eq('organization_id', this.organizationId).neq('status', 'archived').order('updated_at', { ascending: false }),
       this.client.from('meal_plan_versions').select('meal_plan_id,version,meals,change_summary,created_at').eq('organization_id', this.organizationId).order('version', { ascending: false }),
@@ -102,6 +103,8 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const clinicalProfiles: PatientClinical[] = clinicalRows.map((row) => ({
       patientId: String(row.patient_id),
       goal: String(row.goal ?? ''),
+      foodHistory: String(row.food_history ?? ''),
+      habits: String(row.habits ?? ''),
       professionalNotes: String(row.professional_notes ?? ''),
       updatedAt: String(row.updated_at),
     }))
@@ -175,6 +178,44 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       phone: String(row.phone), email: String(row.email), status: fromDatabaseStatus(String(row.status)),
       nextAppointment: row.next_appointment_at ? String(row.next_appointment_at) : undefined,
       createdAt: String(row.created_at),
+    }
+  }
+
+  async saveClinicalProfile(patientId: string, input: ClinicalProfileInput, expectedUpdatedAt?: string): Promise<PatientClinical> {
+    if (!patientId) throw new Error('Selecione um paciente para registrar a anamnese.')
+    const values = {
+      goal: input.goal,
+      food_history: input.foodHistory,
+      habits: input.habits,
+      professional_notes: input.professionalNotes,
+    }
+    const select = 'patient_id,goal,food_history,habits,professional_notes,updated_at'
+    let result
+    if (expectedUpdatedAt) {
+      result = await this.client.from('patient_clinical_profiles')
+        .update(values)
+        .eq('organization_id', this.organizationId)
+        .eq('patient_id', patientId)
+        .eq('updated_at', expectedUpdatedAt)
+        .select(select).maybeSingle()
+      if (!result.error && !result.data) {
+        throw new RepositoryConflictError('A anamnese foi alterada em outra sessão. Recarregue antes de salvar.')
+      }
+    } else {
+      const actor = await this.userId()
+      result = await this.client.from('patient_clinical_profiles')
+        .insert({ ...values, organization_id: this.organizationId, patient_id: patientId, created_by: actor })
+        .select(select).single()
+    }
+    const row = requireData(result.data, result.error, 'A anamnese não foi confirmada pelo servidor.')
+    if (String(row.patient_id) !== patientId || !row.updated_at) throw new Error('O servidor não confirmou a anamnese.')
+    return {
+      patientId: String(row.patient_id),
+      goal: String(row.goal ?? ''),
+      foodHistory: String(row.food_history ?? ''),
+      habits: String(row.habits ?? ''),
+      professionalNotes: String(row.professional_notes ?? ''),
+      updatedAt: String(row.updated_at),
     }
   }
 

@@ -9,6 +9,13 @@ export const patientSchema = z.object({
   nextAppointment: z.string().optional(),
 })
 
+export const clinicalProfileSchema = z.object({
+  goal: z.string().trim().max(4000, 'O objetivo deve ter no máximo 4.000 caracteres.'),
+  foodHistory: z.string().trim().max(12000, 'O histórico deve ter no máximo 12.000 caracteres.'),
+  habits: z.string().trim().max(12000, 'O registro de hábitos deve ter no máximo 12.000 caracteres.'),
+  professionalNotes: z.string().trim().max(12000, 'As observações devem ter no máximo 12.000 caracteres.'),
+})
+
 export const assessmentSchema = z.object({
   patientId: z.string().min(1, 'Selecione um paciente.'),
   assessedAt: z.string().date('Informe uma data válida.'),

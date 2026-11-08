@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AssessmentInput, MealPlan, NutritionWorkspace, PatientInput } from '../domain/models'
+import type { AssessmentInput, ClinicalProfileInput, MealPlan, NutritionWorkspace, PatientInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -8,6 +8,7 @@ type WorkspaceContextValue = {
   error: string | null
   createPatient: (input: PatientInput) => Promise<string>
   updatePatient: (id: string, input: PatientInput) => Promise<void>
+  saveClinicalProfile: (patientId: string, input: ClinicalProfileInput, expectedUpdatedAt?: string) => Promise<void>
   createAssessment: (input: AssessmentInput) => Promise<void>
   saveMealPlan: (plan: MealPlan, summary: string) => Promise<MealPlan>
   refresh: () => Promise<void>
@@ -47,6 +48,10 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     },
     async updatePatient(id, input) {
       await repository.updatePatient(id, input)
+      await refresh()
+    },
+    async saveClinicalProfile(patientId, input, expectedUpdatedAt) {
+      await repository.saveClinicalProfile(patientId, input, expectedUpdatedAt)
       await refresh()
     },
     async createAssessment(input) {

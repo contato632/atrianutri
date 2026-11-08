@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { LoadingState } from '../components/LoadingState'
 import { Modal } from '../components/Modal'
+import { AnamnesisForm } from '../components/AnamnesisForm'
 import { PatientForm } from '../components/PatientForm'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
@@ -10,8 +11,9 @@ import { useWorkspace } from '../state/WorkspaceContext'
 
 export function PatientDetailPage() {
   const { patientId } = useParams()
-  const { workspace, loading, updatePatient } = useWorkspace()
+  const { workspace, loading, updatePatient, saveClinicalProfile } = useWorkspace()
   const [editing, setEditing] = useState(false)
+  const [editingClinical, setEditingClinical] = useState(false)
   if (loading) return <LoadingState lines={6} />
   const patient = workspace.patients.find((item) => item.id === patientId)
   if (!patient) return <Navigate to="/pacientes" replace />
@@ -38,8 +40,14 @@ export function PatientDetailPage() {
 
         <section className="panel detail-card clinical-card">
           <header><span className="detail-icon"><LockKeyhole size={17} /></span><div><span className="eyebrow">Acesso clínico restrito</span><h3>Contexto nutricional</h3></div></header>
-          <dl className="detail-list"><div><dt>Objetivo do acompanhamento</dt><dd>{clinical?.goal || 'Ainda não informado'}</dd></div><div><dt>Observação profissional</dt><dd>{clinical?.professionalNotes || 'Nenhuma observação registrada'}</dd></div></dl>
-          <p className="privacy-note"><LockKeyhole size={13} /> Visível somente para profissionais autorizados da organização.</p>
+          <dl className="detail-list">
+            <div><dt>Objetivo do acompanhamento</dt><dd className="anamnesis-preview">{clinical?.goal || 'Ainda não informado'}</dd></div>
+            <div><dt>Histórico alimentar</dt><dd className="anamnesis-preview">{clinical?.foodHistory || 'Ainda não registrado'}</dd></div>
+            <div><dt>Hábitos e rotina</dt><dd className="anamnesis-preview">{clinical?.habits || 'Ainda não registrado'}</dd></div>
+            <div><dt>Observações profissionais</dt><dd className="anamnesis-preview">{clinical?.professionalNotes || 'Nenhuma observação registrada'}</dd></div>
+          </dl>
+          <button type="button" className="button button--soft anamnesis-open" onClick={() => setEditingClinical(true)}><ClipboardList size={16} /> {clinical ? 'Editar anamnese' : 'Registrar anamnese'}</button>
+          <p className="privacy-note"><LockKeyhole size={13} /> Registros clínicos acessíveis somente a profissionais autorizados.</p>
         </section>
 
         <section className="panel detail-card">
@@ -55,6 +63,12 @@ export function PatientDetailPage() {
         </section>
       </div>
 
+      {editingClinical && <Modal title="Anamnese nutricional" eyebrow="Registro clínico restrito" onClose={() => setEditingClinical(false)} size="large">
+        <AnamnesisForm profile={clinical} onCancel={() => setEditingClinical(false)} onSubmit={async (input, expectedUpdatedAt) => {
+          await saveClinicalProfile(patient.id, input, expectedUpdatedAt)
+          setEditingClinical(false)
+        }} />
+      </Modal>}
       {editing && <Modal title="Editar paciente" eyebrow="Cadastro administrativo" onClose={() => setEditing(false)} size="large"><PatientForm patient={patient} onCancel={() => setEditing(false)} onSubmit={async (input) => { await updatePatient(patient.id, input); setEditing(false) }} /></Modal>}
     </div>
   )

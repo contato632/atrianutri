@@ -45,10 +45,10 @@ export const demoWorkspace: NutritionWorkspace = {
     },
   ],
   clinicalProfiles: [
-    { patientId: 'demo-patient-ana', goal: 'Melhorar rotina alimentar e disposição.', professionalNotes: 'Rotina de trabalho com horários variáveis.', updatedAt: DEMO_NOW },
-    { patientId: 'demo-patient-rafael', goal: 'Acompanhamento da composição corporal.', professionalNotes: 'Reavaliar tolerância e preferências na próxima consulta.', updatedAt: DEMO_NOW },
-    { patientId: 'demo-patient-luiza', goal: 'Organizar refeições durante a semana.', professionalNotes: 'Planejamento inicial em construção.', updatedAt: DEMO_NOW },
-    { patientId: 'demo-patient-marcos', goal: 'Retomar acompanhamento.', professionalNotes: 'Acompanhamento pausado pelo paciente.', updatedAt: DEMO_NOW },
+    { patientId: 'demo-patient-ana', goal: 'Melhorar rotina alimentar e disposição.', foodHistory: '', habits: '', professionalNotes: 'Rotina de trabalho com horários variáveis.', updatedAt: DEMO_NOW },
+    { patientId: 'demo-patient-rafael', goal: 'Acompanhamento da composição corporal.', foodHistory: '', habits: '', professionalNotes: 'Reavaliar tolerância e preferências na próxima consulta.', updatedAt: DEMO_NOW },
+    { patientId: 'demo-patient-luiza', goal: 'Organizar refeições durante a semana.', foodHistory: '', habits: '', professionalNotes: 'Planejamento inicial em construção.', updatedAt: DEMO_NOW },
+    { patientId: 'demo-patient-marcos', goal: 'Retomar acompanhamento.', foodHistory: '', habits: '', professionalNotes: 'Acompanhamento pausado pelo paciente.', updatedAt: DEMO_NOW },
   ],
   assessments: [
     { id: 'assess-ana-1', patientId: 'demo-patient-ana', assessedAt: '2026-08-02', weightKg: 71.8, heightCm: 168, waistCm: 82, hipCm: 101, armCm: 29, bmi: 25.4, notes: 'Avaliação inicial demonstrativa.', createdAt: '2026-08-02T14:00:00.000Z' },

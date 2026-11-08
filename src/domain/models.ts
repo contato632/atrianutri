@@ -14,6 +14,8 @@ export interface PatientAdministrative {
 export interface PatientClinical {
   patientId: string
   goal: string
+  foodHistory: string
+  habits: string
   professionalNotes: string
   updatedAt: string
 }
@@ -72,4 +74,5 @@ export interface NutritionWorkspace {
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
+export type ClinicalProfileInput = Pick<PatientClinical, 'goal' | 'foodHistory' | 'habits' | 'professionalNotes'>
 export type AssessmentInput = Omit<Assessment, 'id' | 'bmi' | 'createdAt'>

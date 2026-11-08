@@ -16,6 +16,14 @@ describe('DemoNutritionRepository', () => {
     expect(snapshot.patients[0].phone).toBe('(11) 98888-2222')
     expect(snapshot.clinicalProfiles[0]).toEqual(expect.objectContaining({ patientId: created.id, goal: '', professionalNotes: '' }))
     expect(snapshot.patients[0]).not.toHaveProperty('professionalNotes')
+    const saved = await repository.saveClinicalProfile(created.id, {
+      goal: 'Organizar os horários de refeição',
+      foodHistory: 'Histórico fictício',
+      habits: 'Turnos alternados',
+      professionalNotes: 'Revisar na próxima consulta',
+    }, snapshot.clinicalProfiles[0].updatedAt)
+    expect(saved.foodHistory).toBe('Histórico fictício')
+    expect((await repository.snapshot()).clinicalProfiles[0].habits).toBe('Turnos alternados')
   })
 
   it('calcula IMC ao criar avaliação', async () => {

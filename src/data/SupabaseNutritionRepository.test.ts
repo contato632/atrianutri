@@ -34,3 +34,21 @@ describe('SupabaseNutritionRepository meal plan persistence', () => {
     await expect(repository.saveMealPlan({ ...newPlan, id: 'plan-1', version: 2 }, 'Ajuste')).rejects.toBeInstanceOf(RepositoryConflictError)
   })
 })
+
+describe('SupabaseNutritionRepository clinical profile', () => {
+  it('bloqueia overwrite quando o timestamp de anamnese mudou', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
+    const select = vi.fn().mockReturnValue({ maybeSingle })
+    const eq = vi.fn().mockReturnThis()
+    const update = vi.fn().mockReturnValue({ eq, select })
+    const from = vi.fn().mockReturnValue({ update })
+    const repository = new SupabaseNutritionRepository({ from } as unknown as SupabaseClient, 'org-ficticia')
+    await expect(repository.saveClinicalProfile('patient-ficticio', {
+      goal: '', foodHistory: '', habits: '', professionalNotes: '',
+    }, '2026-11-08T13:00:00Z')).rejects.toBeInstanceOf(RepositoryConflictError)
+    expect(from).toHaveBeenCalledWith('patient_clinical_profiles')
+    expect(eq).toHaveBeenCalledWith('organization_id', 'org-ficticia')
+    expect(eq).toHaveBeenCalledWith('patient_id', 'patient-ficticio')
+    expect(eq).toHaveBeenCalledWith('updated_at', '2026-11-08T13:00:00Z')
+  })
+})
