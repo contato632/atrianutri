@@ -481,6 +481,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .auth-form-panel { align-items: start; padding: 38px 20px; }
 }
 
+.approval-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, #e7f7f5, transparent 42%), var(--surface); }
+.approval-card { width: min(620px, 100%); padding: 42px; border: 1px solid #dfe7eb; border-radius: 22px; background: white; box-shadow: 0 18px 50px rgba(16, 52, 75, .12); }
+.approval-card h1 { margin: 10px 0; color: var(--navy); font-family: Georgia, serif; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 500; }
+.approval-card > p { color: #71838f; line-height: 1.65; }
+.approval-card dl { margin: 26px 0; display: grid; gap: 10px; }
+.approval-card dl div { display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid #e6ecef; }
+.approval-card dt { color: #71838f; }
+.approval-card dd { margin: 0; color: var(--navy); font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.organization-select { max-width: 180px; border: 1px solid #dbe4e9; border-radius: 9px; padding: 9px 28px 9px 10px; background: white; color: var(--navy); }
+.security-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.security-card { padding: 26px; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+.security-card h3 { margin: 4px 0; color: var(--navy); }
+.security-card p { margin: 0; color: #71838f; }
+.security-card .form-stack { width: 100%; }
+.security-feedback { display: flex; gap: 9px; align-items: center; padding: 13px 16px; border: 1px solid #bce3d8; border-radius: 10px; background: #edf9f5; color: #176b57; }
+.totp-qr { width: min(220px, 100%); align-self: center; border: 1px solid #dbe4e9; border-radius: 12px; }
+.totp-secret { font-size: .82rem; overflow-wrap: anywhere; }
+
+@media (max-width: 700px) {
+  .security-grid { grid-template-columns: 1fr; }
+  .approval-card { padding: 26px; }
+  .approval-card dl div { display: block; }
+  .approval-card dd { margin-top: 5px; text-align: left; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

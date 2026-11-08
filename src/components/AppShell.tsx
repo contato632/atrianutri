@@ -1,7 +1,8 @@
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FlaskConical, HelpCircle, Home, Menu, Settings, Sparkles, Users, Utensils, X } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FlaskConical, HelpCircle, Home, LogOut, Menu, Settings, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
+import type { ProfessionalIdentity } from '../auth/types'
 
 const primaryNavigation = [
   { to: '/', label: 'Início', icon: Home },
@@ -27,7 +28,15 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
   ))}</nav>
 }
 
-export function AppShell() {
+type AppShellProps = {
+  mode?: 'demo' | 'supabase'
+  identity?: ProfessionalIdentity
+  organizationId?: string
+  onOrganizationChange?: (organizationId: string) => void
+  onSignOut?: () => Promise<void>
+}
+
+export function AppShell({ mode = 'demo', identity, organizationId, onOrganizationChange, onSignOut }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
@@ -41,7 +50,7 @@ export function AppShell() {
         <NavItems />
         <div className="sidebar__secondary">
           <button type="button" className="nav-item"><HelpCircle size={19} /><span>Ajuda</span></button>
-          <button type="button" className="nav-item"><Settings size={19} /><span>Configurações</span></button>
+          {mode === 'supabase' ? <NavLink to="/seguranca" className={({ isActive }) => `nav-item ${isActive ? 'nav-item--active' : ''}`}><ShieldCheck size={19} /><span>Segurança</span></NavLink> : <button type="button" className="nav-item"><Settings size={19} /><span>Configurações</span></button>}
         </div>
         <button type="button" className="collapse-button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}>
           {collapsed ? <ChevronRight size={17} /> : <><ChevronLeft size={17} /><span>Recolher menu</span></>}
@@ -63,16 +72,14 @@ export function AppShell() {
             <div><span>{meta.eyebrow}</span><h1>{meta.title}</h1></div>
           </div>
           <div className="topbar__actions">
-            <span className="demo-chip"><FlaskConical size={14} /> Demonstração</span>
+            <span className="demo-chip">{mode === 'demo' ? <><FlaskConical size={14} /> Demonstração</> : <><ShieldCheck size={14} /> Supabase</>}</span>
+            {identity && identity.memberships.length > 1 && <select className="organization-select" value={organizationId} onChange={(event) => onOrganizationChange?.(event.target.value)} aria-label="Organização ativa">{identity.memberships.map((membership) => <option key={membership.organizationId} value={membership.organizationId}>{membership.organizationName}</option>)}</select>}
             <button className="quick-calendar" type="button"><CalendarDays size={18} /><span>Agenda</span></button>
-            <button className="profile-button" type="button" aria-label="Perfil de Dra. Marina"><span>MM</span><div><strong>Dra. Marina</strong><small>Nutricionista</small></div></button>
+            <button className="profile-button" type="button" onClick={() => onSignOut && void onSignOut()} aria-label={identity ? 'Encerrar sessão' : 'Perfil de Dra. Marina'}><span>{identity ? identity.email.slice(0, 2).toUpperCase() : 'MM'}</span><div><strong>{identity?.email ?? 'Dra. Marina'}</strong><small>{identity ? 'Profissional verificado' : 'Nutricionista'}</small></div>{identity && <LogOut size={15} />}</button>
           </div>
         </header>
 
-        <div className="demo-banner" role="status">
-          <Sparkles size={16} />
-          <span><strong>Ambiente de demonstração.</strong> Todos os dados são fictícios e as alterações desta sessão não serão persistidas.</span>
-        </div>
+        <div className="demo-banner" role="status"><Sparkles size={16} /><span>{mode === 'demo' ? <><strong>Ambiente de demonstração.</strong> Todos os dados são fictícios e as alterações desta sessão não serão persistidas.</> : <><strong>Ambiente Supabase homologado.</strong> Utilize exclusivamente contas e pacientes fictícios durante os testes.</>}</span></div>
         <div className="page-container"><Outlet /></div>
       </main>
 

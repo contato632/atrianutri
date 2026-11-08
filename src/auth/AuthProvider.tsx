@@ -1,11 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { AuthViewState, ProfessionalAuthService } from './types'
+import type { AuthViewState, MfaEnrollment, ProfessionalAuthService } from './types'
 
 type AuthContextValue = {
   state: AuthViewState
   signIn: (email: string, password: string) => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
   verifyMfa: (code: string) => Promise<void>
+  enrollTotp: () => Promise<MfaEnrollment>
+  verifyTotpEnrollment: (factorId: string, code: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
   signOut: () => Promise<void>
   refresh: () => Promise<void>
 }
@@ -33,6 +36,14 @@ export function AuthProvider({ service, children }: { service: ProfessionalAuthS
     void refresh()
     return service.onAuthEvent((event) => {
       if (event === 'SIGNED_OUT') setState({ status: 'signed-out', identity: null, message: null })
+      else if (event === 'PASSWORD_RECOVERY') queueMicrotask(async () => {
+        try {
+          const identity = await service.restoreSession()
+          setState(identity ? { status: 'password-recovery', identity, message: null } : { status: 'signed-out', identity: null, message: null })
+        } catch (reason) {
+          setState({ status: 'error', identity: null, message: reason instanceof Error ? reason.message : 'Não foi possível validar a recuperação.' })
+        }
+      })
       else queueMicrotask(() => { void refresh() })
     })
   }, [refresh, service])
@@ -58,6 +69,17 @@ export function AuthProvider({ service, children }: { service: ProfessionalAuthS
         setState((current) => current.status === 'mfa-required' ? current : { status: 'error', identity: null, message: reason instanceof Error ? reason.message : 'Código inválido.' })
         throw reason
       }
+    },
+    async enrollTotp() { return service.enrollTotp() },
+    async verifyTotpEnrollment(factorId, code) {
+      const identity = await service.verifyTotp(factorId, code)
+      setState({ status: 'signed-in', identity, message: null })
+    },
+    async updatePassword(password) {
+      await service.updatePassword(password)
+      const identity = await service.restoreSession()
+      if (!identity) throw new Error('Sua sessão expirou. Entre novamente.')
+      setState({ status: 'signed-in', identity, message: null })
     },
     async signOut() {
       await service.signOut()

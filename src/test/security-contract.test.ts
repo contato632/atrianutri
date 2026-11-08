@@ -13,10 +13,9 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe('frontend security contract', () => {
-  it('não contém endpoint Supabase fixo, service role ou armazenamento local de dados clínicos', () => {
+  it('não contém segredo administrativo ou armazenamento local de dados clínicos', () => {
     const files = sourceFiles(join(root, 'src')).filter((path) => !path.endsWith('security-contract.test.ts'))
     const combined = files.map((path) => `\nFILE:${relative(root, path)}\n${readFileSync(path, 'utf8')}`).join('')
-    expect(combined).not.toContain('.supabase.co')
     expect(combined).not.toMatch(/service[_-]?role/i)
     expect(combined).not.toContain('localStorage')
     expect(combined).not.toContain('sessionStorage')
@@ -27,6 +26,13 @@ describe('frontend security contract', () => {
     expect(client).toContain('tbbaiowzduqriwdjeacd')
     expect(client).toContain('forbiddenProjectRefs')
     expect(client).not.toContain('https://tbbaiowzduqriwdjeacd')
+  })
+
+  it('fixa a allowlist no projeto exclusivo do AtriaNutri e mantém dados reais bloqueados por padrão', () => {
+    const client = readFileSync(join(root, 'src/lib/supabase.ts'), 'utf8')
+    expect(client).toContain('zwnoxycxhlihqxhutlcy')
+    expect(client).toContain('VITE_REAL_DATA_APPROVED')
+    expect(readFileSync(join(root, '.env.example'), 'utf8')).toContain('VITE_REAL_DATA_APPROVED=false')
   })
 
   it('inclui navegação responsiva para desktop e celular', () => {

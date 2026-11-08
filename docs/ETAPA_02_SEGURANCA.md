@@ -53,15 +53,16 @@ Revisão realizada em 8 de novembro de 2026 sobre a migration inicial, ainda nã
 - profissional pertencente à mesma organização;
 - concorrência otimista e confirmação da versão no servidor.
 
-## Resultado da validação local
+## Resultado final da validação local
 
 - Supabase CLI verificada: `3.0.0`.
 - Docker local verificado: `29.9.2`.
 - `supabase start` foi executado sem vínculo remoto.
-- O download da imagem oficial `supabase/postgres:17.11.0.011` falhou ao registrar uma camada por falta de espaço no executor: `no space left on device`.
-- Como validação alternativa, a migration foi aplicada do início ao fim, com `ON_ERROR_STOP`, em um contêiner descartável `postgres:17-alpine` com stubs mínimos de `auth.uid()` e papéis Supabase.
-- Um teste transacional real passou nesse banco para chave composta plano–paciente, isolamento entre organizações, escopo administrativo da recepção, ausência de acesso clínico, bloqueio de autoelevação, salvamento atômico de versão e rejeição de versão obsoleta.
-- A migration está validada quanto à sintaxe e às restrições nativas do PostgreSQL 17. A suíte pgTAP completa **não foi executada na pilha Supabase oficial** e não deve ser descrita como homologada nesse ambiente.
+- A imagem completa falhou no driver VFS por falta de espaço, mas a variante slim oficial da CLI foi iniciada com PostgreSQL `17.11.0.011-r0`, GoTrue e PostgREST.
+- A migration foi aplicada do início ao fim na pilha oficial.
+- `supabase test db` executou os 46 testes pgTAP: 46 aprovados, 0 falhas.
+- Um teste HTTP adicional usou duas contas e organizações fictícias para confirmar Auth, PostgREST, RPCs, persistência e bloqueio de leitura/mutação cruzada por RLS.
+- O healthcheck interno do GoTrue recebeu 403 do proxy do executor; o endpoint real `/auth/v1/health` respondeu 200 e os logins fictícios funcionaram. A pilha foi usada com `--ignore-health-check` somente no ambiente local descartável.
 
 ## Estado de Auth e persistência
 

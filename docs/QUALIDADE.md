@@ -18,10 +18,11 @@
 - bloqueio preventivo do projeto AtriaClinic;
 - presença de RLS e grants mínimos na migration;
 - build TypeScript/Vite de produção.
+- Playwright em Chromium real para desktop 1280×800 e celular 390×844, incluindo ausência de estouro horizontal.
 
-O SQL de pgTAP em `supabase/tests/rls_isolation_test.sql` agora simula duas organizações, múltiplos papéis e pacientes. A tentativa com a pilha oficial foi feita com Supabase CLI 3.0.0 e Docker 29.9.2, sem projeto remoto, mas a imagem PostgreSQL não coube no armazenamento do executor (`no space left on device`).
+O SQL de pgTAP em `supabase/tests/rls_isolation_test.sql` simula duas organizações, múltiplos papéis e pacientes. Na variante slim oficial da Supabase CLI 3.0.0, a migration foi aplicada em PostgreSQL 17 e os 46 testes passaram.
 
-Como validação independente, a migration foi aplicada integralmente em PostgreSQL 17 com stubs mínimos de autenticação. Um teste transacional real confirmou integridade referencial, isolamento RLS, escopo da recepção, bloqueio de autoelevação e concorrência otimista. A suíte pgTAP completa permanece pendente na pilha Supabase oficial.
+`npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste avaliação e plano, confirma que leitura e mutação cruzadas são bloqueadas por RLS e conclui enrollment/verificação TOTP com elevação de sessão.
 
 ## Cenários manuais da demonstração
 

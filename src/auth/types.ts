@@ -1,5 +1,6 @@
 export type ProfessionalMembership = {
   organizationId: string
+  organizationName: string
   role: 'owner' | 'admin' | 'nutritionist' | 'reception'
   clinicalAccess: boolean
 }
@@ -35,5 +36,6 @@ export type AuthViewState =
   | { status: 'signed-out'; identity: null; message: string | null }
   | { status: 'mfa-required'; identity: ProfessionalIdentity; message: null }
   | { status: 'signed-in'; identity: ProfessionalIdentity; message: null }
+  | { status: 'password-recovery'; identity: ProfessionalIdentity; message: null }
   | { status: 'session-expired'; identity: null; message: string }
   | { status: 'error'; identity: null; message: string }

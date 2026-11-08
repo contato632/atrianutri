@@ -21,7 +21,7 @@ export class SupabaseProfessionalAuthService implements ProfessionalAuthService 
 
     const { data: rows, error: membershipError } = await this.client
       .from('organization_members')
-      .select('organization_id,role,clinical_access')
+      .select('organization_id,role,clinical_access,organizations!organization_members_organization_id_fkey(name)')
       .eq('user_id', verifiedUser.id)
       .eq('active', true)
 
@@ -34,11 +34,16 @@ export class SupabaseProfessionalAuthService implements ProfessionalAuthService 
       throw new Error('Esta conta não possui um vínculo profissional ativo.')
     }
 
-    const memberships: ProfessionalMembership[] = rows.map((row) => ({
-      organizationId: String(row.organization_id),
-      role: row.role as ProfessionalMembership['role'],
-      clinicalAccess: Boolean(row.clinical_access),
-    }))
+    const memberships: ProfessionalMembership[] = rows.map((row) => {
+      const organization = row.organizations as unknown as { name?: string } | { name?: string }[] | null
+      const organizationName = Array.isArray(organization) ? organization[0]?.name : organization?.name
+      return {
+        organizationId: String(row.organization_id),
+        organizationName: String(organizationName ?? 'Organização'),
+        role: row.role as ProfessionalMembership['role'],
+        clinicalAccess: Boolean(row.clinical_access),
+      }
+    })
     const { data: assurance, error: assuranceError } = await this.client.auth.mfa.getAuthenticatorAssuranceLevel()
     if (assuranceError) throw authError(assuranceError, 'Não foi possível verificar a autenticação em duas etapas.')
 

@@ -4,7 +4,7 @@ import { Brand } from '../components/Brand'
 import { useAuth } from './AuthProvider'
 
 export function ProfessionalAuthPanel() {
-  const { state, signIn, requestPasswordReset, verifyMfa } = useAuth()
+  const { state, signIn, requestPasswordReset, verifyMfa, updatePassword } = useAuth()
   const [mode, setMode] = useState<'login' | 'forgot'>('login')
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState('')
@@ -38,12 +38,27 @@ export function ProfessionalAuthPanel() {
     finally { setBusy(false) }
   }
 
+  async function submitNewPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    const password = String(data.get('password') ?? '')
+    const confirmation = String(data.get('confirmation') ?? '')
+    if (password !== confirmation) { setFeedback('As senhas não coincidem.'); return }
+    setBusy(true); setFeedback('')
+    try { await updatePassword(password) }
+    catch (reason) { setFeedback(reason instanceof Error ? reason.message : 'Não foi possível atualizar a senha.') }
+    finally { setBusy(false) }
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-brand-panel"><Brand /><div><span>ACESSO PROFISSIONAL</span><h1>Cuidado nutricional com contexto e continuidade.</h1><p>Um ambiente protegido para organizar avaliações, planos e evolução de cada paciente.</p></div><small>Dados de saúde exigem acesso individual e verificável.</small></section>
       <section className="auth-form-panel">
         <div className="auth-card">
-          {state.status === 'loading' ? <div className="auth-loading"><LoaderCircle className="spin" /><strong>Verificando sua sessão…</strong><span>Isso pode levar alguns segundos.</span></div> : state.status === 'mfa-required' ? <>
+          {state.status === 'loading' ? <div className="auth-loading"><LoaderCircle className="spin" /><strong>Verificando sua sessão…</strong><span>Isso pode levar alguns segundos.</span></div> : state.status === 'password-recovery' ? <>
+            <span className="auth-icon"><KeyRound /></span><span className="eyebrow">Nova senha</span><h2>Proteja novamente sua conta</h2><p>Use pelo menos 12 caracteres, com letras maiúsculas, minúsculas e números.</p>
+            <form onSubmit={submitNewPassword} className="form-stack"><label className="field"><span>Nova senha</span><div className="auth-input"><LockKeyhole size={16} /><input type="password" name="password" autoComplete="new-password" minLength={12} required /></div></label><label className="field"><span>Confirmar nova senha</span><div className="auth-input"><LockKeyhole size={16} /><input type="password" name="confirmation" autoComplete="new-password" minLength={12} required /></div></label>{feedback && <p className="form-error" role="alert">{feedback}</p>}<button className="button button--primary" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <KeyRound />}Atualizar senha</button></form>
+          </> : state.status === 'mfa-required' ? <>
             <span className="auth-icon"><ShieldCheck /></span><span className="eyebrow">Segunda etapa</span><h2>Confirme sua identidade</h2><p>Digite o código de seis dígitos do seu aplicativo autenticador.</p>
             <form onSubmit={submitMfa} className="form-stack"><label className="field"><span>Código de verificação</span><input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></label>{feedback && <p className="form-error" role="alert">{feedback}</p>}<button className="button button--primary" disabled={busy}>{busy ? <LoaderCircle className="spin" /> : <ShieldCheck />}Verificar e continuar</button></form>
           </> : mode === 'forgot' ? <>

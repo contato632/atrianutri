@@ -15,8 +15,9 @@ type WorkspaceContextValue = {
 
 const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [] }
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
+const defaultDemoRepository = new DemoNutritionRepository()
 
-export function WorkspaceProvider({ children, repository = new DemoNutritionRepository() }: { children: ReactNode; repository?: NutritionRepository }) {
+export function WorkspaceProvider({ children, repository = defaultDemoRepository }: { children: ReactNode; repository?: NutritionRepository }) {
   const [workspace, setWorkspace] = useState(emptyWorkspace)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
