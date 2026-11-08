@@ -11,13 +11,17 @@
 - separação do perfil clínico;
 - criação de avaliação e cálculo do IMC;
 - versões de rascunho do plano;
+- confirmação server-side e conflitos do adaptador Supabase;
+- restauração de sessão, exigência de MFA, logout e sessão expirada;
 - validação do formulário de paciente;
 - ausência de endpoint Supabase fixo, `service_role` e Web Storage;
 - bloqueio preventivo do projeto AtriaClinic;
 - presença de RLS e grants mínimos na migration;
 - build TypeScript/Vite de produção.
 
-O SQL de pgTAP em `supabase/tests/rls_isolation_test.sql` valida grants e RLS básicos quando houver ambiente Supabase local. Ele não foi executado nesta entrega porque não há projeto/container de banco autorizado configurado.
+O SQL de pgTAP em `supabase/tests/rls_isolation_test.sql` agora simula duas organizações, múltiplos papéis e pacientes. A tentativa com a pilha oficial foi feita com Supabase CLI 3.0.0 e Docker 29.9.2, sem projeto remoto, mas a imagem PostgreSQL não coube no armazenamento do executor (`no space left on device`).
+
+Como validação independente, a migration foi aplicada integralmente em PostgreSQL 17 com stubs mínimos de autenticação. Um teste transacional real confirmou integridade referencial, isolamento RLS, escopo da recepção, bloqueio de autoelevação e concorrência otimista. A suíte pgTAP completa permanece pendente na pilha Supabase oficial.
 
 ## Cenários manuais da demonstração
 

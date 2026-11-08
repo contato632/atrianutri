@@ -57,4 +57,25 @@ describe('migration security contract', () => {
     expect(migration).toContain('patient_professional_assignments')
     expect(migration).toContain('organization_id')
   })
+
+  it('amarra cada versão ao plano, organização e paciente do cabeçalho', () => {
+    expect(migration).toContain('unique (id, organization_id, patient_id)')
+    expect(migration).toContain('foreign key (meal_plan_id, organization_id, patient_id)')
+    expect(migration).toContain('references public.meal_plans(id, organization_id, patient_id)')
+  })
+
+  it('mantém versões imutáveis e usa RPC transacional com conflito otimista', () => {
+    expect(migration).not.toContain('grant insert (organization_id, meal_plan_id, patient_id, version, meals, change_summary, created_by)')
+    expect(migration).not.toContain('grant update (current_version)')
+    expect(migration).toContain('for update')
+    expect(migration).toContain("raise exception 'Meal plan version conflict' using errcode = '40001'")
+    expect(migration).toContain('public.save_meal_plan_version')
+    expect(migration).toContain('public.create_meal_plan_draft')
+  })
+
+  it('impede autoelevação de cargo e acesso clínico', () => {
+    expect(migration).toContain("user_id <> (select auth.uid())")
+    expect(migration).toContain("and role <> 'owner'")
+    expect(migration).toContain("array['owner']::public.organization_role[]")
+  })
 })

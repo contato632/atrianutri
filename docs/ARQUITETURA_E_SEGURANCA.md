@@ -10,8 +10,12 @@ React + TypeScript + Vite, organizado por responsabilidade:
 - `components/`: componentes reutilizáveis e acessíveis;
 - `pages/`: fluxos verticais de pacientes, avaliações, planos e gestão;
 - `lib/supabase.ts`: criação opcional do cliente, sem URL ou chave fixa.
+- `auth/`: login profissional, recuperação, verificação server-side de identidade, sessão e MFA/TOTP;
+- `data/SupabaseNutritionRepository.ts`: adaptador persistente preparado e ainda não ativado.
 
 A interface padrão usa `DemoNutritionRepository`. Ela clona os dados iniciais e os mantém apenas em memória. Não usa `localStorage`, `sessionStorage`, cookies de aplicação ou chamadas a bancos.
+
+O cliente Supabase usa `persistSession: false`: tokens permanecem somente em memória até existir uma estratégia de armazenamento revisada. A aplicação demonstração não monta o fluxo Auth nem instancia o adaptador persistente.
 
 ## Modelo futuro do banco
 
@@ -25,6 +29,8 @@ A migration versionada separa:
 - `audit_events`: metadados mínimos de alterações.
 
 Toda entidade sensível possui `organization_id` direto ou por chave composta. A chave composta entre paciente e organização impede vínculos acidentais com registros de outra clínica.
+
+As versões de plano usam uma chave estrangeira composta com plano, organização e paciente. A gravação ocorre por RPC com bloqueio de linha e versão esperada, garantindo incremento atômico e detecção de concorrência.
 
 ## Autorização proposta
 

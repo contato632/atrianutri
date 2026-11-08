@@ -18,7 +18,8 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 
   client = createClient(url, publishableKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    // Health data sessions stay memory-only until a reviewed secure storage strategy exists.
+    auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: true },
   })
   return client
 }

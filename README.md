@@ -13,6 +13,8 @@ Esta branch contém uma demonstração vertical navegável em português brasile
 - editor manual de planos alimentares, refeições, itens, orientações e versões;
 - migrations para um futuro projeto Supabase **exclusivo do AtriaNutri**;
 - políticas RLS, grants mínimos, vínculo profissional–paciente e auditoria de alterações sensíveis;
+- fundação de Auth profissional com recuperação, sessão em memória e TOTP/MFA;
+- `SupabaseNutritionRepository` preparado, mas ainda não ativado;
 - testes unitários, de componentes e contratos de segurança.
 
 Os dados exibidos são fictícios. No modo padrão `demo`, as alterações vivem apenas na memória e desaparecem ao recarregar. Não há Supabase conectado e não existe falsa indicação de persistência.
@@ -44,7 +46,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `service_role`, tokens administrativos ou chaves secretas a variáveis `VITE_*`.
 
-`VITE_DATA_MODE=supabase` apenas habilita a criação segura do cliente. O repositório persistente e os fluxos de autenticação ainda precisam ser implementados e homologados antes de usar dados reais.
+`VITE_DATA_MODE=supabase` apenas habilita a criação segura do cliente. Auth e o adaptador persistente estão implementados como fundação, mas permanecem desacoplados da aplicação até a homologação local e a existência de um projeto exclusivo autorizado.
 
 ## Banco futuro
 
@@ -57,7 +59,8 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Auditoria do AtriaClinic e decisões de reuso](docs/AUDITORIA_ATRIACLINIC.md)
 - [Arquitetura e segurança](docs/ARQUITETURA_E_SEGURANCA.md)
 - [Qualidade e escopo de homologação](docs/QUALIDADE.md)
+- [Etapa 02 — auditoria RLS e homologação](docs/ETAPA_02_SEGURANCA.md)
 
 ## Limites de produção
 
-Esta versão não está liberada para pacientes reais. Permanecem pendentes: projeto Supabase dedicado, autenticação e MFA homologados, adaptador persistente, testes RLS com identidades distintas, política formal de retenção/exclusão, backup e restauração testados, E2E e revisão jurídica/LGPD.
+Esta versão não está liberada para pacientes reais. Permanecem pendentes: projeto Supabase dedicado, execução bem-sucedida da migration/pgTAP local, autenticação e MFA ponta a ponta, ativação controlada do adaptador persistente, política formal de retenção/exclusão, backup e restauração testados, E2E e revisão jurídica/LGPD.
