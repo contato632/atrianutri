@@ -1,0 +1,21 @@
+import { ArrowRight, Banknote, CalendarDays, FileBarChart, LockKeyhole, Settings2, Stethoscope, UsersRound } from 'lucide-react'
+
+const modules = [
+  { icon: CalendarDays, title: 'Agenda e recorrências', description: 'Organize consultas e disponibilidade por profissional.', status: 'Próxima etapa', tone: 'blue' },
+  { icon: Stethoscope, title: 'Serviços e valores', description: 'Cadastre consultas, retornos e duração padrão.', status: 'Arquitetura preparada', tone: 'teal' },
+  { icon: UsersRound, title: 'Equipe e permissões', description: 'Perfis por organização com acesso mínimo necessário.', status: 'RLS preparada', tone: 'violet' },
+  { icon: Banknote, title: 'Financeiro', description: 'Cobranças e recebimentos administrativos, sem dados clínicos.', status: 'Próxima etapa', tone: 'amber' },
+  { icon: FileBarChart, title: 'Relatórios', description: 'Indicadores operacionais sem exposição clínica indevida.', status: 'Planejado', tone: 'slate' },
+  { icon: Settings2, title: 'Configurações', description: 'Dados do consultório, fuso e preferências.', status: 'Planejado', tone: 'slate' },
+]
+
+export function ManagementPage() {
+  return (
+    <div className="page-stack">
+      <section className="section-intro"><div><h2>Gestão do consultório</h2><p>Módulos administrativos independentes do AtriaClinic e do AtriaMind.</p></div></section>
+      <section className="management-note"><LockKeyhole size={18} /><div><strong>Separação por organização desde a fundação</strong><p>Cada registro administrativo e clínico é vinculado à organização. As políticas versionadas impedem acesso cruzado entre clínicas e profissionais.</p></div></section>
+      <section className="module-grid">{modules.map(({ icon: Icon, title, description, status, tone }) => <article className="module-card panel" key={title}><span className={`module-icon ${tone}`}><Icon size={20} /></span><div><h3>{title}</h3><p>{description}</p></div><footer><span>{status}</span><button type="button" aria-label={`Abrir ${title}`} disabled><ArrowRight size={16} /></button></footer></article>)}</section>
+      <section className="panel reuse-panel"><div><span className="eyebrow">Decisão de arquitetura</span><h3>Reuso responsável do AtriaClinic</h3><p>Foram aproveitados os padrões de navegação, isolamento organizacional, papéis, RLS, auditoria e segurança de sessão. Código, chaves, projeto Supabase e dados permanecem totalmente separados.</p></div><span className="independent-badge"><LockKeyhole size={15} /> Produto independente</span></section>
+    </div>
+  )
+}
