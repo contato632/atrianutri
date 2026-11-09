@@ -6,6 +6,10 @@ export type DocumentBranding = {
   clinicName: string
   professionalName: string
   crn: string
+  phone: string
+  email: string
+  address: string
+  showContacts: boolean
   headerText: string
   footerText: string
   primaryColor: string
@@ -82,12 +86,23 @@ const clean = (value?: string) => value?.trim() || 'Não informado'
 const selected = (options: NutritionDocumentOptions, id: string) => options.sections.includes(id)
 const slug = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
+export function defaultDocumentBranding(professionalName = ''): DocumentBranding {
+  return {
+    clinicName: 'AtriaNutri', professionalName, crn: '', phone: '', email: '', address: '', showContacts: true,
+    headerText: '', footerText: 'Documento gerado localmente pelo AtriaNutri.', primaryColor: '#176fa5',
+  }
+}
+
+export function isValidCrn(value: string): boolean {
+  return /^CRN(?:-|\s)?\d{1,2}\s+\d{3,8}(?:\/P)?$/i.test(value.trim())
+}
+
 export function defaultDocumentOptions(type: NutritionDocumentType, patientId: string, professionalName = ''): NutritionDocumentOptions {
   const definition = documentDefinitions[type]
   return {
     type, patientId, title: definition.title, introduction: '', closingNotes: '',
     sections: definition.sections.filter((section) => !section.restricted).map((section) => section.id),
-    branding: { clinicName: 'AtriaNutri', professionalName, crn: '', headerText: '', footerText: 'Documento gerado localmente pelo AtriaNutri.', primaryColor: '#176fa5' },
+    branding: defaultDocumentBranding(professionalName),
   }
 }
 
@@ -105,6 +120,7 @@ export function buildNutritionDocument(workspace: NutritionWorkspace, options: N
   const patient = workspace.patients.find((item) => item.id === options.patientId)
   if (!patient) throw new Error('Selecione um paciente disponível.')
   if (!options.branding.professionalName.trim() || !options.branding.crn.trim()) throw new Error('Informe o nome do nutricionista e o CRN antes de gerar o PDF.')
+  if (!isValidCrn(options.branding.crn)) throw new Error('Informe um CRN válido no formato CRN-5 12345 antes de gerar o PDF.')
   const profile = workspace.clinicalProfiles.find((item) => item.patientId === patient.id)
   const assessments = workspace.assessments.filter((item) => item.patientId === patient.id).sort((a, b) => a.assessedAt.localeCompare(b.assessedAt))
   const evaluations = workspace.nutritionEvaluations.filter((item) => item.patientId === patient.id).sort((a, b) => b.evaluatedOn.localeCompare(a.evaluatedOn))

@@ -3,7 +3,7 @@ import { demoWorkspace } from '../data/demo-data'
 import { buildNutritionPdf } from '../lib/nutritionPdf'
 import { buildNutritionDocument, defaultDocumentOptions, resolvePlanMeals, type NutritionDocumentType } from './documents'
 
-const branding = { clinicName: 'Clínica Fictícia', professionalName: 'Dra. Marina Costa', crn: 'CRN-5 00000', headerText: 'Documento de teste', footerText: 'Dados exclusivamente fictícios.', primaryColor: '#176fa5' }
+const branding = { clinicName: 'Clínica Fictícia', professionalName: 'Dra. Marina Costa', crn: 'CRN-5 00000', phone: '(71) 3000-0000', email: 'teste@example.com', address: 'Salvador, BA', showContacts: true, headerText: 'Documento de teste', footerText: 'Dados exclusivamente fictícios.', primaryColor: '#176fa5' }
 
 function options(type: NutritionDocumentType) {
   const value = defaultDocumentOptions(type, 'demo-patient-ana', branding.professionalName)
@@ -46,6 +46,11 @@ describe('documentos nutricionais', () => {
   it('exige identificação profissional e CRN', () => {
     const value = options('follow-up'); value.branding = { ...branding, crn: '' }
     expect(() => buildNutritionDocument(demoWorkspace, value)).toThrow('CRN')
+  })
+
+  it('rejeita CRN com formato inválido antes de emitir qualquer documento', () => {
+    const value = options('evaluation'); value.branding = { ...branding, crn: '12345' }
+    expect(() => buildNutritionDocument(demoWorkspace, value)).toThrow('CRN válido')
   })
 
   it('gera PDF A4 válido com paginação e gráfico sem serviço externo', () => {

@@ -3,9 +3,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { buildNutritionDocument, defaultDocumentOptions, documentDefinitions, type NutritionDocumentOptions, type NutritionDocumentType } from '../domain/documents'
 import { nutritionPdfBlob } from '../lib/nutritionPdf'
 import { useWorkspace } from '../state/WorkspaceContext'
+import { useDocumentPreferences } from '../state/DocumentPreferencesContext'
+import { ProfessionalDocumentSettings } from '../components/ProfessionalDocumentSettings'
 
 export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
   const { workspace, loading } = useWorkspace()
+  const preferences = useDocumentPreferences()
   const firstPatient = workspace.nutritionEvaluations[0]?.patientId ?? workspace.assessments[0]?.patientId ?? workspace.patients[0]?.id ?? ''
   const [type, setType] = useState<NutritionDocumentType>('evaluation')
   const [patientId, setPatientId] = useState(firstPatient)
@@ -19,10 +22,8 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
   }, [firstPatient, patientId])
 
   useEffect(() => {
-    if (!options.branding.professionalName && workspace.nutritionEvaluations.length) {
-      setOptions((current) => ({ ...current, branding: { ...current.branding, professionalName: workspace.nutritionEvaluations[0].authorLabel } }))
-    }
-  }, [options.branding.professionalName, workspace.nutritionEvaluations])
+    if (!preferences.loading) setOptions((current) => ({ ...current, branding: structuredClone(preferences.branding) }))
+  }, [preferences.branding, preferences.loading, preferences.revision])
 
   const evaluations = useMemo(() => workspace.nutritionEvaluations.filter((item) => item.patientId === patientId).sort((a, b) => b.evaluatedOn.localeCompare(a.evaluatedOn)), [patientId, workspace.nutritionEvaluations])
   const plans = useMemo(() => workspace.mealPlans.filter((item) => item.patientId === patientId), [patientId, workspace.mealPlans])
@@ -77,6 +78,8 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
   return <div className="page-stack documents-page">
     <section className="section-intro"><div><h2>Central de documentos</h2><p>Prepare relatórios profissionais em PDF usando somente os registros existentes.</p></div><span className="local-pdf-chip"><ShieldCheck size={15} /> Geração local e protegida</span></section>
 
+    <ProfessionalDocumentSettings />
+
     <section className="document-types" aria-label="Tipos de documento">{(Object.entries(documentDefinitions) as [NutritionDocumentType, typeof definition][]).map(([key, item]) => <button type="button" className={type === key ? 'active' : ''} onClick={() => changeType(key)} key={key}><span>{key === 'evolution' ? <FileBarChart size={18} /> : <FileText size={18} />}</span><strong>{item.label}</strong><small>{item.description}</small></button>)}</section>
 
     <div className="document-workspace">
@@ -91,7 +94,7 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
 
         <fieldset className="document-sections"><legend>Seções do documento</legend>{definition.sections.map((section) => <label className={section.restricted ? 'restricted' : ''} key={section.id}><input type="checkbox" checked={options.sections.includes(section.id)} onChange={(event) => setOptions((current) => ({ ...current, sections: event.target.checked ? [...current.sections, section.id] : current.sections.filter((item) => item !== section.id) }))} /><span>{section.label}{section.restricted && <small><LockKeyhole size={11} /> Conteúdo clínico restrito</small>}</span></label>)}</fieldset>
 
-        <details className="document-branding" open><summary>Cabeçalho e identificação profissional</summary><div className="document-branding__fields"><label className="field"><span>Nome da clínica</span><input value={options.branding.clinicName} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, clinicName: event.target.value } }))} /></label><label className="field"><span>Nutricionista</span><input value={options.branding.professionalName} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, professionalName: event.target.value } }))} /></label><label className="field"><span>CRN</span><input value={options.branding.crn} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, crn: event.target.value } }))} placeholder="Informe o registro profissional" /></label><label className="field"><span>Cor principal</span><input type="color" value={options.branding.primaryColor} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, primaryColor: event.target.value } }))} /></label><label className="field document-wide"><span>Complemento do cabeçalho <small>opcional</small></span><input value={options.branding.headerText} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, headerText: event.target.value } }))} /></label><label className="field document-wide"><span>Rodapé</span><input value={options.branding.footerText} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, footerText: event.target.value } }))} /></label></div></details>
+        <details className="document-branding"><summary>Personalizar apenas este documento</summary><div className="document-branding__fields"><p className="document-wide document-branding__hint">Estas alterações não modificam as preferências profissionais salvas para a sessão.</p><label className="field"><span>Nome da clínica</span><input value={options.branding.clinicName} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, clinicName: event.target.value } }))} /></label><label className="field"><span>Nutricionista</span><input value={options.branding.professionalName} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, professionalName: event.target.value } }))} /></label><label className="field"><span>CRN</span><input value={options.branding.crn} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, crn: event.target.value } }))} placeholder="CRN-5 12345" /></label><label className="field"><span>Cor principal</span><input type="color" value={options.branding.primaryColor} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, primaryColor: event.target.value } }))} /></label><label className="field"><span>Telefone</span><input value={options.branding.phone} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, phone: event.target.value } }))} /></label><label className="field"><span>E-mail</span><input value={options.branding.email} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, email: event.target.value } }))} /></label><label className="field document-wide"><span>Endereço</span><input value={options.branding.address} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, address: event.target.value } }))} /></label><label className="professional-settings__toggle document-wide"><input type="checkbox" checked={options.branding.showContacts} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, showContacts: event.target.checked } }))} /><span>Exibir contatos no cabeçalho</span></label><label className="field document-wide"><span>Complemento do cabeçalho <small>opcional</small></span><input value={options.branding.headerText} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, headerText: event.target.value } }))} /></label><label className="field document-wide"><span>Rodapé</span><input value={options.branding.footerText} onChange={(event) => setOptions((current) => ({ ...current, branding: { ...current.branding, footerText: event.target.value } }))} /></label></div></details>
         <label className="field"><span>Observações finais <small>opcional</small></span><textarea value={options.closingNotes} onChange={(event) => setOptions((current) => ({ ...current, closingNotes: event.target.value }))} rows={3} maxLength={2000} /></label>
         <p className="document-safety"><LockKeyhole size={14} /> Notas privadas do diário, metas e anamnese não são incluídas. Nenhuma assinatura, diagnóstico ou recomendação é criada automaticamente.</p>
         {error && <p className="form-error" role="alert">{error}</p>}

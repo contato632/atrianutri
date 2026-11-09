@@ -15,6 +15,7 @@ import { SecurityPage } from './pages/SecurityPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { FinancialPage } from './pages/FinancialPage'
 import { WorkspaceProvider } from './state/WorkspaceContext'
+import { DocumentPreferencesProvider } from './state/DocumentPreferencesContext'
 import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
 import type { NutritionRepository } from './data/repository'
 import { getSupabaseRuntime, type SupabaseRuntime } from './lib/supabase'
@@ -33,25 +34,28 @@ type WorkspaceRoutesProps = {
 function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, onOrganizationChange, onSignOut }: WorkspaceRoutesProps) {
   const membership = identity?.memberships.find((item) => item.organizationId === organizationId) ?? identity?.memberships[0]
   const documentsAuthorized = mode === 'demo' || Boolean(membership?.clinicalAccess && membership.role !== 'reception')
+  const preferencesScope = { organizationId: organizationId || 'demo-organization', professionalId: identity?.userId || 'demo-professional' }
   return (
     <WorkspaceProvider repository={repository}>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppShell mode={mode} identity={identity} organizationId={organizationId} onOrganizationChange={onOrganizationChange} onSignOut={onSignOut} />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="pacientes" element={<PatientsPage />} />
-            <Route path="pacientes/:patientId" element={<PatientDetailPage />} />
-            <Route path="avaliacoes" element={<AssessmentsPage />} />
-            <Route path="planos" element={<MealPlansPage />} />
-            <Route path="gestao" element={<ManagementPage />} />
-            <Route path="agenda" element={<AgendaPage />} />
-            <Route path="financeiro" element={<FinancialPage />} />
-            <Route path="documentos" element={<Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense>} />
-            {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <DocumentPreferencesProvider scope={preferencesScope}>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppShell mode={mode} identity={identity} organizationId={organizationId} onOrganizationChange={onOrganizationChange} onSignOut={onSignOut} />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="pacientes" element={<PatientsPage />} />
+              <Route path="pacientes/:patientId" element={<PatientDetailPage />} />
+              <Route path="avaliacoes" element={<AssessmentsPage />} />
+              <Route path="planos" element={<MealPlansPage />} />
+              <Route path="gestao" element={<ManagementPage />} />
+              <Route path="agenda" element={<AgendaPage />} />
+              <Route path="financeiro" element={<FinancialPage />} />
+              <Route path="documentos" element={<Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense>} />
+              {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </DocumentPreferencesProvider>
     </WorkspaceProvider>
   )
 }

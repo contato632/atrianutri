@@ -15,7 +15,11 @@ function rgb(hex: string): [number, number, number] {
 export function buildNutritionPdf(document: NutritionDocument): jsPDF {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true })
   const primary = rgb(document.branding.primaryColor)
-  let y = 41
+  let y = 44
+
+  const contactLine = document.branding.showContacts
+    ? [document.branding.phone, document.branding.email, document.branding.address].map((item) => item.trim()).filter(Boolean).join(' · ')
+    : ''
 
   const drawHeader = () => {
     pdf.setFillColor(...primary); pdf.rect(0, 0, PAGE_WIDTH, 5, 'F')
@@ -23,10 +27,11 @@ export function buildNutritionPdf(document: NutritionDocument): jsPDF {
     pdf.text(document.branding.clinicName || 'AtriaNutri', MARGIN, 17)
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(93, 113, 126)
     const header = document.branding.headerText.trim()
-    if (header) pdf.text(header, PAGE_WIDTH - MARGIN, 17, { align: 'right', maxWidth: 85 })
-    pdf.setDrawColor(221, 230, 235); pdf.line(MARGIN, 24, PAGE_WIDTH - MARGIN, 24)
+    if (header) pdf.text((pdf.splitTextToSize(header, 92) as string[])[0], PAGE_WIDTH - MARGIN, 14, { align: 'right' })
+    if (contactLine) { pdf.setFontSize(6.8); pdf.text((pdf.splitTextToSize(contactLine, 112) as string[]).slice(0, 2), PAGE_WIDTH - MARGIN, 19, { align: 'right', lineHeightFactor: 1.15 }) }
+    pdf.setDrawColor(221, 230, 235); pdf.line(MARGIN, 27, PAGE_WIDTH - MARGIN, 27)
   }
-  const nextPage = () => { pdf.addPage(); drawHeader(); y = 34 }
+  const nextPage = () => { pdf.addPage(); drawHeader(); y = 37 }
   const ensure = (height: number) => { if (y + height > CONTENT_BOTTOM) nextPage() }
   const lines = (text: string, width = CONTENT_WIDTH) => pdf.splitTextToSize(text || 'Não informado', width) as string[]
   const paragraph = (text: string, color: [number, number, number] = [65, 86, 100]) => {
@@ -136,7 +141,8 @@ export function buildNutritionPdf(document: NutritionDocument): jsPDF {
   for (let page = 1; page <= pages; page += 1) {
     pdf.setPage(page); pdf.setDrawColor(221, 230, 235); pdf.line(MARGIN, 282, PAGE_WIDTH - MARGIN, 282)
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(111, 128, 139)
-    pdf.text(document.branding.footerText || 'Documento gerado localmente pelo AtriaNutri.', MARGIN, 287, { maxWidth: 100 })
+    const footerLines = pdf.splitTextToSize(document.branding.footerText || 'Documento gerado localmente pelo AtriaNutri.', 62) as string[]
+    pdf.text(footerLines.slice(0, 2), MARGIN, 286, { lineHeightFactor: 1.15 })
     pdf.text(`${document.branding.professionalName} · ${document.branding.crn}`, PAGE_WIDTH / 2, 287, { align: 'center', maxWidth: 65 })
     pdf.text(`Página ${page} de ${pages}`, PAGE_WIDTH - MARGIN, 287, { align: 'right' })
   }
