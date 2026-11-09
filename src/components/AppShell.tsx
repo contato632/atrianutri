@@ -20,6 +20,7 @@ const pageMeta: Record<string, { title: string; eyebrow: string }> = {
   '/planos': { title: 'Planos alimentares', eyebrow: 'Planejamento individualizado' },
   '/gestao': { title: 'Gestão', eyebrow: 'Consultório' },
   '/agenda': { title: 'Agenda', eyebrow: 'Organização profissional' },
+  '/financeiro': { title: 'Financeiro', eyebrow: 'Gestão administrativa' },
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {

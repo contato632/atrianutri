@@ -18,6 +18,7 @@ Esta branch contém uma demonstração vertical navegável em português brasile
 - diário alimentar contextual e acompanhamento de hábitos/metas no prontuário;
 - avaliação nutricional estruturada, recordatório de 24 horas e evolução clínica consolidada;
 - agenda profissional diária, semanal e mensal, recorrências, conflitos e serviços administrativos;
+- financeiro administrativo com cobranças, recebimentos parciais, estornos, despesas e indicadores;
 - testes unitários, de componentes e contratos de segurança.
 
 Os dados exibidos são fictícios. No modo padrão `demo`, as alterações vivem apenas na memória e desaparecem ao recarregar. O modo Supabase exige configuração explícita, valida o Project Ref e mantém os dados reais bloqueados até a homologação remota de RLS, backup e restauração.
@@ -55,7 +56,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05, 06 e 07 estão somente versionadas e validadas localmente; **não foram aplicadas remotamente**. As quatro migrations passaram juntas em PostgreSQL 17 oficial do Supabase e em 103 testes pgTAP. A interface permanece bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
+A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05 a 08 estão somente versionadas e **não foram aplicadas remotamente**. A validação sequencial local Supabase/pgTAP das Etapas 07 e 08 permanece pendente; a interface continua bloqueada para dados reais até essa execução, backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 
@@ -77,6 +78,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Etapa 05 — diário alimentar e hábitos](docs/ETAPA_05_DIARIO_HABITOS.md)
 - [Etapa 06 — avaliação nutricional completa](docs/ETAPA_06_AVALIACAO_COMPLETA.md)
 - [Etapa 07 — agenda profissional](docs/ETAPA_07_AGENDA_PROFISSIONAL.md)
+- [Etapa 08 — financeiro do consultório](docs/ETAPA_08_FINANCEIRO.md)
 
 ## Limites de produção
 

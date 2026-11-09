@@ -1,6 +1,7 @@
 import { calculateBmi } from '../domain/nutrition'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { hasAppointmentConflict, occurrenceInstants } from '../domain/scheduling'
+import { assertMoneyCents, chargeBalanceCents, netReceivedCents } from '../domain/financial'
 import { demoWorkspace } from './demo-data'
 
 export interface NutritionRepository {
@@ -18,6 +19,12 @@ export interface NutritionRepository {
   saveProfessionalService(input: ProfessionalServiceInput, serviceId?: string): Promise<ProfessionalService>
   saveAppointment(input: AppointmentInput, appointmentId?: string, scope?: AppointmentChangeScope, expectedUpdatedAt?: string): Promise<Appointment>
   cancelAppointment(appointmentId: string, scope: AppointmentChangeScope, expectedUpdatedAt: string): Promise<void>
+  saveFinancialCharge(input: FinancialChargeInput): Promise<FinancialCharge>
+  cancelFinancialCharge(chargeId: string, expectedUpdatedAt: string): Promise<void>
+  recordFinancialPayment(input: FinancialPaymentInput): Promise<FinancialPayment>
+  reverseFinancialPayment(paymentId: string, idempotencyKey: string, note: string): Promise<FinancialPayment>
+  saveFinancialExpense(input: FinancialExpenseInput, expenseId?: string, expectedUpdatedAt?: string): Promise<FinancialExpense>
+  saveExpenseCategory(name: string, categoryId?: string): Promise<{id:string;name:string;active:boolean}>
 }
 
 const clone = <T,>(value: T): T => structuredClone(value)
@@ -236,4 +243,51 @@ export class DemoNutritionRepository implements NutritionRepository {
     ))
     this.refreshNextAppointments()
   }
+
+  async saveFinancialCharge(input: FinancialChargeInput) {
+    assertMoneyCents(input.amountCents)
+    if (!this.data.patients.some((item) => item.id === input.patientId)) throw new Error('Paciente não encontrado.')
+    if (input.appointmentId && this.data.financialCharges.some((item) => item.appointmentId === input.appointmentId && !item.canceledAt)) throw new Error('Este agendamento já possui uma cobrança ativa.')
+    const appointment = input.appointmentId ? this.data.appointments.find((item) => item.id === input.appointmentId) : undefined
+    if (appointment && (appointment.patientId !== input.patientId || appointment.professionalId !== input.professionalId || appointment.status === 'canceled')) throw new Error('O agendamento não pode ser vinculado a esta cobrança.')
+    const timestamp = new Date().toISOString()
+    const saved: FinancialCharge = { ...clone(input), id:id('charge'), createdAt:timestamp, updatedAt:timestamp }
+    this.data.financialCharges.unshift(saved)
+    return clone(saved)
+  }
+
+  async cancelFinancialCharge(chargeId: string, expectedUpdatedAt: string) {
+    const index=this.data.financialCharges.findIndex((item)=>item.id===chargeId)
+    if(index<0)throw new Error('Cobrança não encontrada.')
+    const charge=this.data.financialCharges[index]
+    if(charge.updatedAt!==expectedUpdatedAt)throw new Error('A cobrança foi alterada em outra sessão.')
+    if(netReceivedCents(chargeId,this.data.financialPayments)>0)throw new Error('Estorne os recebimentos antes de cancelar a cobrança.')
+    const timestamp=new Date().toISOString();this.data.financialCharges[index]={...charge,canceledAt:timestamp,updatedAt:timestamp}
+  }
+
+  async recordFinancialPayment(input: FinancialPaymentInput) {
+    assertMoneyCents(input.amountCents,'Recebimento')
+    if(this.data.financialPayments.some((item)=>item.idempotencyKey===input.idempotencyKey))throw new Error('Este recebimento já foi registrado.')
+    const charge=this.data.financialCharges.find((item)=>item.id===input.chargeId)
+    if(!charge||charge.canceledAt)throw new Error('Cobrança não encontrada ou cancelada.')
+    if(input.amountCents>chargeBalanceCents(charge,this.data.financialPayments))throw new Error('O recebimento não pode superar o saldo devido.')
+    const timestamp=new Date().toISOString();const saved:FinancialPayment={...clone(input),id:id('payment'),kind:'receipt',createdAt:timestamp,createdByLabel:'Dra. Marina'}
+    this.data.financialPayments.unshift(saved);return clone(saved)
+  }
+
+  async reverseFinancialPayment(paymentId:string,idempotencyKey:string,note:string){
+    if(this.data.financialPayments.some((item)=>item.idempotencyKey===idempotencyKey))throw new Error('Este estorno já foi registrado.')
+    const original=this.data.financialPayments.find((item)=>item.id===paymentId&&item.kind==='receipt');if(!original)throw new Error('Recebimento não encontrado.')
+    const alreadyReversed=this.data.financialPayments.filter((item)=>item.reversesPaymentId===paymentId).reduce((sum,item)=>sum+item.amountCents,0);if(alreadyReversed>=original.amountCents)throw new Error('Este recebimento já foi totalmente estornado.')
+    const timestamp=new Date().toISOString();const saved:FinancialPayment={...original,id:id('reversal'),kind:'reversal',amountCents:original.amountCents-alreadyReversed,receivedAt:timestamp.slice(0,10),administrativeNote:note,idempotencyKey,reversesPaymentId:original.id,createdAt:timestamp,createdByLabel:'Dra. Marina'}
+    this.data.financialPayments.unshift(saved);return clone(saved)
+  }
+
+  async saveFinancialExpense(input:FinancialExpenseInput,expenseId?:string,expectedUpdatedAt?:string){
+    assertMoneyCents(input.amountCents,'Despesa');if(!this.data.expenseCategories.some((item)=>item.id===input.categoryId&&item.active))throw new Error('Categoria de despesa inválida.')
+    const index=expenseId?this.data.financialExpenses.findIndex((item)=>item.id===expenseId):-1;const previous=index>=0?this.data.financialExpenses[index]:undefined
+    if(expenseId&&!previous)throw new Error('Despesa não encontrada.');if(previous&&previous.updatedAt!==expectedUpdatedAt)throw new Error('A despesa foi alterada em outra sessão.')
+    const timestamp=new Date().toISOString();const saved:FinancialExpense={...clone(input),id:previous?.id??id('expense'),createdAt:previous?.createdAt??timestamp,updatedAt:timestamp};if(index>=0)this.data.financialExpenses[index]=saved;else this.data.financialExpenses.unshift(saved);return clone(saved)
+  }
+  async saveExpenseCategory(name:string,categoryId?:string){const clean=name.trim();if(clean.length<2)throw new Error('Informe o nome da categoria.');const index=categoryId?this.data.expenseCategories.findIndex((item)=>item.id===categoryId):-1;if(this.data.expenseCategories.some((item)=>item.name.toLowerCase()===clean.toLowerCase()&&item.id!==categoryId))throw new Error('Esta categoria já existe.');const saved={id:index>=0?this.data.expenseCategories[index].id:id('expense-category'),name:clean,active:true};if(index>=0)this.data.expenseCategories[index]=saved;else this.data.expenseCategories.push(saved);return clone(saved)}
 }

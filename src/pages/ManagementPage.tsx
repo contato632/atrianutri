@@ -6,7 +6,7 @@ const modules = [
   { icon: CalendarDays, title: 'Agenda e recorrências', description: 'Organize consultas e disponibilidade por profissional.', status: 'Disponível', tone: 'blue', href:'/agenda' },
   { icon: Stethoscope, title: 'Serviços e valores', description: 'Cadastre consultas, retornos e duração padrão.', status: 'Disponível abaixo', tone: 'teal' },
   { icon: UsersRound, title: 'Equipe e permissões', description: 'Perfis por organização com acesso mínimo necessário.', status: 'RLS preparada', tone: 'violet' },
-  { icon: Banknote, title: 'Financeiro', description: 'Cobranças e recebimentos administrativos, sem dados clínicos.', status: 'Próxima etapa', tone: 'amber' },
+  { icon: Banknote, title: 'Financeiro', description: 'Cobranças, recebimentos e despesas, sem dados clínicos.', status: 'Disponível', tone: 'amber', href:'/financeiro' },
   { icon: FileBarChart, title: 'Relatórios', description: 'Indicadores operacionais sem exposição clínica indevida.', status: 'Planejado', tone: 'slate' },
   { icon: Settings2, title: 'Configurações', description: 'Dados do consultório, fuso e preferências.', status: 'Planejado', tone: 'slate' },
 ]

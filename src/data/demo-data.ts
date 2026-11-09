@@ -112,4 +112,20 @@ export const demoWorkspace: NutritionWorkspace = {
     {id:'appointment-rafael',patientId:'demo-patient-rafael',serviceId:'service-initial',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'nutrition-consultation',status:'scheduled',title:'Consulta nutricional',privateTitle:'',administrativeNote:'',startsAt:'2026-11-10T18:00:00.000Z',endsAt:'2026-11-10T19:00:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
     {id:'appointment-personal',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'personal',status:'scheduled',title:'Compromisso particular',privateTitle:'Assunto pessoal fictício',administrativeNote:'',startsAt:'2026-11-11T19:00:00.000Z',endsAt:'2026-11-11T20:00:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
   ],
+  financialCharges: [
+    {id:'charge-ana',patientId:'demo-patient-ana',professionalId:'demo-professional-marina',appointmentId:'appointment-ana',serviceId:'service-followup',description:'Retorno nutricional',amountCents:15000,dueDate:'2026-11-09',administrativeNote:'Cobrança demonstrativa.',createdAt:'2026-11-01T12:00:00.000Z',updatedAt:DEMO_NOW},
+    {id:'charge-rafael',patientId:'demo-patient-rafael',professionalId:'demo-professional-marina',appointmentId:'appointment-rafael',serviceId:'service-initial',description:'Consulta nutricional inicial',amountCents:25000,dueDate:'2026-11-10',administrativeNote:'',createdAt:'2026-11-02T12:00:00.000Z',updatedAt:DEMO_NOW},
+    {id:'charge-luiza',patientId:'demo-patient-luiza',professionalId:'demo-professional-marina',description:'Consulta demonstrativa anterior',amountCents:20000,dueDate:'2026-10-20',administrativeNote:'',createdAt:'2026-10-10T12:00:00.000Z',updatedAt:DEMO_NOW},
+  ],
+  financialPayments: [
+    {id:'payment-ana-1',chargeId:'charge-ana',kind:'receipt',amountCents:5000,method:'pix',receivedAt:'2026-11-05',administrativeNote:'Parcela demonstrativa',idempotencyKey:'80000000-0000-4000-8000-000000000001',installmentNumber:1,installmentCount:2,createdAt:'2026-11-05T13:00:00.000Z',createdByLabel:'Dra. Marina'},
+    {id:'payment-luiza-1',chargeId:'charge-luiza',kind:'receipt',amountCents:20000,method:'credit-card',receivedAt:'2026-10-18',administrativeNote:'',idempotencyKey:'80000000-0000-4000-8000-000000000002',createdAt:'2026-10-18T13:00:00.000Z',createdByLabel:'Dra. Marina'},
+  ],
+  expenseCategories: [
+    {id:'expense-cat-rent',name:'Aluguel',active:true},{id:'expense-cat-software',name:'Softwares',active:true},{id:'expense-cat-materials',name:'Materiais',active:true},{id:'expense-cat-services',name:'Serviços',active:true},{id:'expense-cat-team',name:'Equipe',active:true},{id:'expense-cat-other',name:'Outras despesas operacionais',active:true},
+  ],
+  financialExpenses: [
+    {id:'expense-software',categoryId:'expense-cat-software',description:'Software administrativo fictício',amountCents:8900,competenceDate:'2026-11-01',dueDate:'2026-11-05',paidAt:'2026-11-05',status:'paid',administrativeNote:'Ambiente demonstrativo.',createdAt:'2026-11-01T10:00:00.000Z',updatedAt:'2026-11-05T10:00:00.000Z'},
+    {id:'expense-materials',categoryId:'expense-cat-materials',description:'Materiais de consultório fictícios',amountCents:6500,competenceDate:'2026-11-01',dueDate:'2026-11-15',status:'planned',administrativeNote:'',createdAt:'2026-11-02T10:00:00.000Z',updatedAt:'2026-11-02T10:00:00.000Z'},
+  ],
 }

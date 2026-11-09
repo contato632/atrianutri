@@ -8,6 +8,7 @@ const diaryMigration = readFileSync(join(root, 'supabase/migrations/202611081500
 const evaluationMigration = readFileSync(join(root, 'supabase/migrations/20261108180000_complete_nutrition_evaluation.sql'), 'utf8')
 const scheduleMigration = readFileSync(join(root, 'supabase/migrations/20261108210000_professional_schedule.sql'), 'utf8')
 const scheduleHardeningMigration = readFileSync(join(root, 'supabase/migrations/20261108213000_professional_schedule_hardening.sql'), 'utf8')
+const financeMigration = readFileSync(join(root, 'supabase/migrations/20261108230000_office_finance.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -187,4 +188,11 @@ describe('professional schedule hardening contract', () => {
     expect(scheduleHardeningMigration).toContain('v_actor is distinct from v_professional')
     expect(scheduleHardeningMigration).toContain("errcode = '42501'")
   })
+})
+
+describe('office finance migration contract',()=>{
+  it.each(['organization_finance_permissions','financial_charges','financial_payments','expense_categories','financial_expenses','financial_audit_events'])('habilita RLS em %s',(table)=>expect(financeMigration).toContain(`alter table public.${table} enable row level security`))
+  it('separa permissão financeira da autorização clínica',()=>{expect(financeMigration).toContain('organization_finance_permissions');expect(financeMigration).toContain('has_finance_access');expect(financeMigration).not.toContain('can_access_patient_clinical')})
+  it('usa centavos, idempotência, lock e movimentos compensatórios',()=>{expect(financeMigration).toContain('amount_cents bigint');expect(financeMigration).toContain('idempotency_key uuid');expect(financeMigration).toContain('for update');expect(financeMigration).toContain("kind='reversal'");expect(financeMigration).toContain('Payment exceeds outstanding balance')})
+  it('não concede mutação direta nem permite exclusão física',()=>{expect(financeMigration).toContain('revoke all on public.organization_finance_permissions,public.financial_charges');expect(financeMigration).not.toContain('grant insert on public.financial_payments');expect(financeMigration).not.toMatch(/delete from public\.financial_(charges|payments|expenses)/);expect(financeMigration).not.toContain('drop table')})
 })

@@ -208,6 +208,62 @@ export interface Appointment {
   updatedAt: string
 }
 
+export type PaymentMethod = 'pix' | 'cash' | 'credit-card' | 'debit-card' | 'bank-transfer' | 'other'
+export type FinancialChargeStatus = 'pending' | 'partially-paid' | 'paid' | 'overdue' | 'canceled'
+export type FinancialPaymentKind = 'receipt' | 'reversal'
+export type ExpenseStatus = 'planned' | 'paid' | 'canceled'
+
+export interface FinancialCharge {
+  id: string
+  patientId: string
+  professionalId: string
+  appointmentId?: string
+  serviceId?: string
+  description: string
+  amountCents: number
+  dueDate: string
+  administrativeNote: string
+  canceledAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FinancialPayment {
+  id: string
+  chargeId: string
+  kind: FinancialPaymentKind
+  amountCents: number
+  method: PaymentMethod
+  receivedAt: string
+  administrativeNote: string
+  idempotencyKey: string
+  reversesPaymentId?: string
+  installmentNumber?: number
+  installmentCount?: number
+  createdAt: string
+  createdByLabel: string
+}
+
+export interface ExpenseCategory {
+  id: string
+  name: string
+  active: boolean
+}
+
+export interface FinancialExpense {
+  id: string
+  categoryId: string
+  description: string
+  amountCents: number
+  competenceDate: string
+  dueDate: string
+  paidAt?: string
+  status: ExpenseStatus
+  administrativeNote: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NutritionWorkspace {
   patients: PatientAdministrative[]
   clinicalProfiles: PatientClinical[]
@@ -220,6 +276,10 @@ export interface NutritionWorkspace {
   dietaryRecalls24h: DietaryRecall24h[]
   professionalServices: ProfessionalService[]
   appointments: Appointment[]
+  financialCharges: FinancialCharge[]
+  financialPayments: FinancialPayment[]
+  expenseCategories: ExpenseCategory[]
+  financialExpenses: FinancialExpense[]
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
@@ -232,3 +292,6 @@ export type NutritionEvaluationInput = Omit<NutritionEvaluation, 'id' | 'authorL
 export type DietaryRecall24hInput = Omit<DietaryRecall24h, 'id' | 'authorLabel' | 'createdAt' | 'updatedAt'>
 export type ProfessionalServiceInput = Omit<ProfessionalService, 'id' | 'createdAt' | 'updatedAt'>
 export type AppointmentInput = Omit<Appointment, 'id' | 'seriesId' | 'professionalId' | 'professionalLabel' | 'createdAt' | 'updatedAt'> & { professionalId?: string }
+export type FinancialChargeInput = Omit<FinancialCharge, 'id' | 'canceledAt' | 'createdAt' | 'updatedAt'>
+export type FinancialPaymentInput = Omit<FinancialPayment, 'id' | 'kind' | 'reversesPaymentId' | 'createdAt' | 'createdByLabel'>
+export type FinancialExpenseInput = Omit<FinancialExpense, 'id' | 'createdAt' | 'updatedAt'>

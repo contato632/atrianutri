@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -19,10 +19,16 @@ type WorkspaceContextValue = {
   saveProfessionalService:(input:ProfessionalServiceInput,service?:ProfessionalService)=>Promise<ProfessionalService>
   saveAppointment:(input:AppointmentInput,appointment?:Appointment,scope?:AppointmentChangeScope)=>Promise<Appointment>
   cancelAppointment:(appointment:Appointment,scope:AppointmentChangeScope)=>Promise<void>
+  saveFinancialCharge:(input:FinancialChargeInput)=>Promise<FinancialCharge>
+  cancelFinancialCharge:(charge:FinancialCharge)=>Promise<void>
+  recordFinancialPayment:(input:FinancialPaymentInput)=>Promise<FinancialPayment>
+  reverseFinancialPayment:(payment:FinancialPayment,note:string)=>Promise<FinancialPayment>
+  saveFinancialExpense:(input:FinancialExpenseInput,expense?:FinancialExpense)=>Promise<FinancialExpense>
+  saveExpenseCategory:(name:string)=>Promise<{id:string;name:string;active:boolean}>
   refresh: () => Promise<void>
 }
 
-const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [], professionalServices: [], appointments: [] }
+const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [], professionalServices: [], appointments: [], financialCharges: [], financialPayments: [], expenseCategories: [], financialExpenses: [] }
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const defaultDemoRepository = new DemoNutritionRepository()
 
@@ -97,6 +103,12 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     async saveProfessionalService(input,service){const saved=await repository.saveProfessionalService(input,service?.id);await refresh();return saved},
     async saveAppointment(input,appointment,scope='occurrence'){const saved=await repository.saveAppointment(input,appointment?.id,scope,appointment?.updatedAt);await refresh();return saved},
     async cancelAppointment(appointment,scope){await repository.cancelAppointment(appointment.id,scope,appointment.updatedAt);await refresh()},
+    async saveFinancialCharge(input){const saved=await repository.saveFinancialCharge(input);await refresh();return saved},
+    async cancelFinancialCharge(charge){await repository.cancelFinancialCharge(charge.id,charge.updatedAt);await refresh()},
+    async recordFinancialPayment(input){const saved=await repository.recordFinancialPayment(input);await refresh();return saved},
+    async reverseFinancialPayment(payment,note){const saved=await repository.reverseFinancialPayment(payment.id,crypto.randomUUID(),note);await refresh();return saved},
+    async saveFinancialExpense(input,expense){const saved=await repository.saveFinancialExpense(input,expense?.id,expense?.updatedAt);await refresh();return saved},
+    async saveExpenseCategory(name){const saved=await repository.saveExpenseCategory(name);await refresh();return saved},
   }), [workspace, loading, error, repository])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

@@ -14,6 +14,7 @@
 - criação, edição, idempotência e conflito do diário, metas e acompanhamentos;
 - avaliação estruturada, recordatório de 24 horas e evolução consolidada;
 - criação, remarcação, cancelamento, recorrência e conflito de agenda;
+- cobranças, recebimentos parciais, parcelamento manual, estornos, vencimentos e despesas;
 - confirmação server-side e conflitos do adaptador Supabase;
 - restauração de sessão, exigência de MFA, logout e sessão expirada;
 - validação do formulário de paciente;
@@ -23,7 +24,7 @@
 - build TypeScript/Vite de produção.
 - Playwright em Chromium real para desktop 1280×800 e celular 390×844, incluindo ausência de estouro horizontal.
 
-Os SQLs pgTAP simulam duas organizações, múltiplos papéis e pacientes, incluindo autor paciente, profissionais simultâneos, recepção, compromissos privados, conflitos de horário, avaliações completas e recordatórios. Na variante slim oficial da Supabase CLI 3.0.0, as quatro migrations foram reaplicadas em PostgreSQL 17 e os 103 testes passaram.
+Os SQLs pgTAP cobrem duas organizações, múltiplos papéis, recepção, compromissos privados e contratos financeiros. A execução sequencial local Supabase/pgTAP das migrations das Etapas 07 e 08 permanece pendente; as migrations 05–08 não devem ser consideradas homologadas até essa rodada ser concluída.
 
 `npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste antropometria, plano, diário, meta, check-in, nota privada, avaliação, recordatório, serviço e agendamento. Também confirma conflito temporal, cancelamento lógico e bloqueio cruzado por RLS antes do enrollment/verificação TOTP.
 

@@ -7,6 +7,7 @@ import { AnamnesisForm } from '../components/AnamnesisForm'
 import { FoodDiaryPanel } from '../components/FoodDiaryPanel'
 import { NutritionEvaluationPanel } from '../components/NutritionEvaluationPanel'
 import { PatientForm } from '../components/PatientForm'
+import { PatientFinancePanel } from '../components/PatientFinancePanel'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
@@ -67,6 +68,7 @@ export function PatientDetailPage() {
 
       <NutritionEvaluationPanel patientId={patient.id} />
       <FoodDiaryPanel patientId={patient.id} />
+      <PatientFinancePanel patientId={patient.id} />
 
       {editingClinical && <Modal title="Anamnese nutricional" eyebrow="Registro clínico restrito" onClose={() => setEditingClinical(false)} size="large">
         <AnamnesisForm profile={clinical} onCancel={() => setEditingClinical(false)} onSubmit={async (input, expectedUpdatedAt) => {

@@ -13,6 +13,7 @@ import { MealPlansPage } from './pages/MealPlansPage'
 import { ManagementPage } from './pages/ManagementPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { AgendaPage } from './pages/AgendaPage'
+import { FinancialPage } from './pages/FinancialPage'
 import { WorkspaceProvider } from './state/WorkspaceContext'
 import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
 import type { NutritionRepository } from './data/repository'
@@ -40,6 +41,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
             <Route path="planos" element={<MealPlansPage />} />
             <Route path="gestao" element={<ManagementPage />} />
             <Route path="agenda" element={<AgendaPage />} />
+            <Route path="financeiro" element={<FinancialPage />} />
             {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
