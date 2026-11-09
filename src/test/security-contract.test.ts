@@ -7,6 +7,7 @@ const migration = readFileSync(join(root, 'supabase/migrations/20261108122833_at
 const diaryMigration = readFileSync(join(root, 'supabase/migrations/20261108150000_food_diary_and_habits.sql'), 'utf8')
 const evaluationMigration = readFileSync(join(root, 'supabase/migrations/20261108180000_complete_nutrition_evaluation.sql'), 'utf8')
 const scheduleMigration = readFileSync(join(root, 'supabase/migrations/20261108210000_professional_schedule.sql'), 'utf8')
+const scheduleHardeningMigration = readFileSync(join(root, 'supabase/migrations/20261108213000_professional_schedule_hardening.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -169,5 +170,21 @@ describe('professional schedule migration contract', () => {
     expect(scheduleMigration).toContain("set status='canceled'")
     expect(scheduleMigration).not.toContain('drop table')
     expect(scheduleMigration).not.toContain('truncate')
+  })
+})
+
+describe('professional schedule hardening contract', () => {
+  it('registra exceções de recorrência com autoria sem operação destrutiva', () => {
+    expect(scheduleHardeningMigration).toContain('appointment_series_exceptions')
+    expect(scheduleHardeningMigration).toContain('capture_appointment_series_exception')
+    expect(scheduleHardeningMigration).toContain('changed_by')
+    expect(scheduleHardeningMigration).not.toContain('drop table')
+    expect(scheduleHardeningMigration).not.toContain('truncate')
+  })
+
+  it('protege detalhes particulares mesmo em mutações security-definer', () => {
+    expect(scheduleHardeningMigration).toContain('protect_appointment_private_details')
+    expect(scheduleHardeningMigration).toContain('v_actor is distinct from v_professional')
+    expect(scheduleHardeningMigration).toContain("errcode = '42501'")
   })
 })

@@ -1,6 +1,6 @@
 import { calculateBmi } from '../domain/nutrition'
 import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
-import { hasAppointmentConflict, recurrenceDates } from '../domain/scheduling'
+import { hasAppointmentConflict, occurrenceInstants } from '../domain/scheduling'
 import { demoWorkspace } from './demo-data'
 
 export interface NutritionRepository {
@@ -155,16 +155,85 @@ export class DemoNutritionRepository implements NutritionRepository {
     return clone(saved)
   }
 
-  private refreshNextAppointments(){const now=Date.now();this.data.patients=this.data.patients.map((patient)=>{const next=this.data.appointments.filter((item)=>item.patientId===patient.id&&!['canceled','completed','no-show'].includes(item.status)&&new Date(item.startsAt).getTime()>=now).sort((a,b)=>a.startsAt.localeCompare(b.startsAt))[0];return {...patient,nextAppointment:next?.startsAt}})}
+  private refreshNextAppointments() {
+    const now = Date.now()
+    this.data.patients = this.data.patients.map((patient) => {
+      const next = this.data.appointments
+        .filter((item) => item.patientId === patient.id
+          && ['scheduled', 'confirmed'].includes(item.status)
+          && new Date(item.startsAt).getTime() >= now)
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+      return { ...patient, nextAppointment: next?.startsAt }
+    })
+  }
 
   async saveProfessionalService(input:ProfessionalServiceInput,serviceId?:string){const index=serviceId?this.data.professionalServices.findIndex((item)=>item.id===serviceId):-1;const previous=index>=0?this.data.professionalServices[index]:null;if(serviceId&&!previous)throw new Error('Serviço não encontrado.');const timestamp=new Date().toISOString();const saved:ProfessionalService={...clone(input),id:previous?.id??id('service'),createdAt:previous?.createdAt??timestamp,updatedAt:timestamp};if(index>=0)this.data.professionalServices[index]=saved;else this.data.professionalServices.push(saved);return clone(saved)}
 
-  async saveAppointment(input:AppointmentInput,appointmentId?:string,scope:AppointmentChangeScope='occurrence',expectedUpdatedAt?:string){
-    const previous=appointmentId?this.data.appointments.find((item)=>item.id===appointmentId):undefined;if(appointmentId&&!previous)throw new Error('Agendamento não encontrado.');if(previous&&previous.updatedAt!==expectedUpdatedAt)throw new Error('O agendamento foi alterado em outra sessão. Atualize antes de salvar.');
-    if(input.patientId&&!this.data.patients.some((item)=>item.id===input.patientId))throw new Error('Paciente não encontrado.');const professionalId=input.professionalId??previous?.professionalId??'demo-professional-marina';const excluded=previous?(scope==='series'&&previous.seriesId?this.data.appointments.filter((item)=>item.seriesId===previous.seriesId).map((item)=>item.id):[previous.id]):[];
-    const timestamp=new Date().toISOString();if(previous){const targets=scope==='series'&&previous.seriesId?this.data.appointments.filter((item)=>item.seriesId===previous.seriesId):[previous];const delta=new Date(input.startsAt).getTime()-new Date(previous.startsAt).getTime();const shiftedTargets=targets.map((target)=>({target,shifted:target.id===previous.id?input:{...input,startsAt:new Date(new Date(target.startsAt).getTime()+delta).toISOString(),endsAt:new Date(new Date(target.endsAt).getTime()+delta).toISOString()}}));if(shiftedTargets.some(({shifted})=>hasAppointmentConflict(this.data.appointments,shifted,professionalId,excluded)))throw new Error('Conflito de horário com outro compromisso deste profissional.');for(const {target,shifted} of shiftedTargets){const index=this.data.appointments.findIndex((item)=>item.id===target.id);this.data.appointments[index]={...target,...clone(shifted),updatedAt:timestamp}}this.refreshNextAppointments();return clone(this.data.appointments.find((item)=>item.id===previous.id)!) }
-    const seriesId=input.recurrenceFrequency==='none'?undefined:id('series');const date=input.startsAt.slice(0,10);const timePart=input.startsAt.slice(11);const duration=new Date(input.endsAt).getTime()-new Date(input.startsAt).getTime();const dates=recurrenceDates(date,input.recurrenceFrequency,input.recurrenceEndsOn);const occurrences=dates.map((occurrenceDate)=>{const startsAt=`${occurrenceDate}T${timePart}`;return{...clone(input),id:id('appointment'),seriesId,professionalId,professionalLabel:professionalId==='demo-professional-marina'?'Dra. Marina':'Profissional',startsAt,endsAt:new Date(new Date(startsAt).getTime()+duration).toISOString(),createdAt:timestamp,updatedAt:timestamp}});if(occurrences.some((occurrence)=>hasAppointmentConflict(this.data.appointments,occurrence,occurrence.professionalId)))throw new Error('Conflito de horário em uma ocorrência da série.');this.data.appointments.push(...occurrences);this.refreshNextAppointments();return clone(occurrences[0])
+  async saveAppointment(input: AppointmentInput, appointmentId?: string, scope: AppointmentChangeScope = 'occurrence', expectedUpdatedAt?: string) {
+    const previous = appointmentId ? this.data.appointments.find((item) => item.id === appointmentId) : undefined
+    if (appointmentId && !previous) throw new Error('Agendamento não encontrado.')
+    if (previous && previous.updatedAt !== expectedUpdatedAt) throw new Error('O agendamento foi alterado em outra sessão. Atualize antes de salvar.')
+    const requiresPatient = input.category === 'nutrition-consultation' || input.category === 'follow-up'
+    if (requiresPatient !== Boolean(input.patientId)) throw new Error('Selecione um paciente apenas para consultas e retornos.')
+    if (input.patientId && !this.data.patients.some((item) => item.id === input.patientId)) throw new Error('Paciente não encontrado.')
+    if (input.serviceId && !this.data.professionalServices.some((item) => item.id === input.serviceId)) throw new Error('Serviço não encontrado.')
+    const professionalId = input.professionalId ?? previous?.professionalId ?? 'demo-professional-marina'
+    const excluded = previous
+      ? scope === 'series' && previous.seriesId
+        ? this.data.appointments.filter((item) => item.seriesId === previous.seriesId).map((item) => item.id)
+        : [previous.id]
+      : []
+    const timestamp = new Date().toISOString()
+
+    if (previous) {
+      const targets = scope === 'series' && previous.seriesId
+        ? this.data.appointments.filter((item) => item.seriesId === previous.seriesId)
+        : [previous]
+      const delta = new Date(input.startsAt).getTime() - new Date(previous.startsAt).getTime()
+      const duration = new Date(input.endsAt).getTime() - new Date(input.startsAt).getTime()
+      const shiftedTargets = targets.map((target) => {
+        const startsAt = target.id === previous.id ? input.startsAt : new Date(new Date(target.startsAt).getTime() + delta).toISOString()
+        return { target, shifted: { ...input, professionalId, startsAt, endsAt: new Date(new Date(startsAt).getTime() + duration).toISOString() } }
+      })
+      if (shiftedTargets.some(({ shifted }) => hasAppointmentConflict(this.data.appointments, shifted, professionalId, excluded))) {
+        throw new Error('Conflito de horário com outro compromisso deste profissional.')
+      }
+      for (const { target, shifted } of shiftedTargets) {
+        const index = this.data.appointments.findIndex((item) => item.id === target.id)
+        this.data.appointments[index] = { ...target, ...clone(shifted), updatedAt: timestamp }
+      }
+      this.refreshNextAppointments()
+      return clone(this.data.appointments.find((item) => item.id === previous.id)!)
+    }
+
+    const seriesId = input.recurrenceFrequency === 'none' ? undefined : id('series')
+    const occurrences: Appointment[] = occurrenceInstants(input).map(({ startsAt, endsAt }) => ({
+      ...clone(input), id: id('appointment'), seriesId, professionalId,
+      professionalLabel: professionalId === 'demo-professional-marina' ? 'Dra. Marina' : 'Profissional',
+      startsAt, endsAt, createdAt: timestamp, updatedAt: timestamp,
+    }))
+    const accepted: Appointment[] = []
+    for (const occurrence of occurrences) {
+      if (hasAppointmentConflict([...this.data.appointments, ...accepted], occurrence, professionalId)) {
+        throw new Error('Conflito de horário em uma ocorrência da série.')
+      }
+      accepted.push(occurrence)
+    }
+    this.data.appointments.push(...accepted)
+    this.refreshNextAppointments()
+    return clone(accepted[0])
   }
 
-  async cancelAppointment(appointmentId:string,scope:AppointmentChangeScope,expectedUpdatedAt:string){const previous=this.data.appointments.find((item)=>item.id===appointmentId);if(!previous)throw new Error('Agendamento não encontrado.');if(previous.updatedAt!==expectedUpdatedAt)throw new Error('O agendamento foi alterado em outra sessão.');const timestamp=new Date().toISOString();this.data.appointments=this.data.appointments.map((item)=>(item.id===appointmentId||(scope==='series'&&previous.seriesId&&item.seriesId===previous.seriesId))?{...item,status:'canceled',updatedAt:timestamp}:item);this.refreshNextAppointments()}
+  async cancelAppointment(appointmentId: string, scope: AppointmentChangeScope, expectedUpdatedAt: string) {
+    const previous = this.data.appointments.find((item) => item.id === appointmentId)
+    if (!previous) throw new Error('Agendamento não encontrado.')
+    if (previous.updatedAt !== expectedUpdatedAt) throw new Error('O agendamento foi alterado em outra sessão.')
+    const timestamp = new Date().toISOString()
+    this.data.appointments = this.data.appointments.map((item) => (
+      item.id === appointmentId || (scope === 'series' && previous.seriesId && item.seriesId === previous.seriesId)
+        ? { ...item, status: 'canceled' as const, updatedAt: timestamp }
+        : item
+    ))
+    this.refreshNextAppointments()
+  }
 }
