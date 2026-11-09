@@ -10,7 +10,7 @@ A área Gestão agora mantém serviços com nome, duração padrão, valor admin
 
 ## Persistência e segurança
 
-As migrations não destrutivas `20261108210000_professional_schedule.sql` e `20261108213000_professional_schedule_hardening.sql` criam e endurecem:
+As migrations não destrutivas `20261108210000_professional_schedule.sql`, `20261108213000_professional_schedule_hardening.sql` e `20261109090000_private_appointment_operational_fix.sql` criam e endurecem:
 
 - `professional_services`, `appointment_series`, `appointments`, `appointment_private_details` e `appointment_changes`;
 - vínculo composto com organização, profissional, paciente e serviço;
@@ -28,9 +28,12 @@ A recepção pode operar a agenda da própria organização pelas RPCs, mas não
 
 ## Validação executada
 
-- `npm test`: 80 testes Vitest aprovados;
+- `npm test`: 96 testes Vitest aprovados no conjunto atual;
 - `npm run build`: TypeScript e build Vite aprovados;
-- `npm run test:e2e`: 9 cenários Chromium aprovados em desktop e celular;
+- `npm run test:e2e`: 11 cenários Chromium aprovados em desktop e celular;
+- `supabase db reset --no-seed`: sete migrations reaplicadas em sequência;
+- `supabase test db`: 123 testes pgTAP aprovados, incluindo operação da recepção sem alteração do título privado;
+- `npm run test:integration:local`: Auth, isolamento organizacional, agenda e MFA aprovados com contas fictícias.
 
 ## Estado de homologação
 

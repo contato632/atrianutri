@@ -24,7 +24,7 @@
 - build TypeScript/Vite de produção.
 - Playwright em Chromium real para desktop 1280×800 e celular 390×844, incluindo ausência de estouro horizontal.
 
-Os SQLs pgTAP cobrem duas organizações, múltiplos papéis, recepção, compromissos privados e contratos financeiros. A execução sequencial local Supabase/pgTAP das migrations das Etapas 07 e 08 permanece pendente; as migrations 05–08 não devem ser consideradas homologadas até essa rodada ser concluída.
+Os SQLs pgTAP cobrem duas organizações, múltiplos papéis, recepção, compromissos privados e contratos financeiros. As sete migrations foram reaplicadas sequencialmente na pilha Supabase local com PostgreSQL 17 e os 123 testes passaram. As migrations 05–08 ainda não foram aplicadas nem homologadas remotamente.
 
 `npm run test:integration:local` cria duas contas e organizações exclusivamente fictícias na pilha descartável. O teste autentica ambas, solicita recuperação sem enumerar cadastro, consulta o vínculo profissional, cria paciente via RPC, persiste antropometria, plano, diário, meta, check-in, nota privada, avaliação, recordatório, serviço e agendamento. Também confirma conflito temporal, cancelamento lógico e bloqueio cruzado por RLS antes do enrollment/verificação TOTP.
 

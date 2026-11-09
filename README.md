@@ -56,7 +56,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05 a 08 estão somente versionadas e **não foram aplicadas remotamente**. A validação sequencial local Supabase/pgTAP das Etapas 07 e 08 permanece pendente; a interface continua bloqueada para dados reais até essa execução, backup/restauração e homologação remota de Auth/RLS.
+A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05 a 08 estão somente versionadas e **não foram aplicadas remotamente**. As sete migrations foram reaplicadas sequencialmente na pilha Supabase local descartável e passaram em 123 testes pgTAP. A interface continua bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 

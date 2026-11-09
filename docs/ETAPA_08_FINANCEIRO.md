@@ -27,6 +27,6 @@ Matriz proposta:
 - Vitest cobre cálculos, vencimentos, parcial, integral, estorno, duplicidade, concorrência simulada e adapters;
 - Playwright cobre cobrança, recebimento, despesa e responsividade;
 - contratos estáticos verificam RLS, grants mínimos, centavos, idempotência e ausência de exclusão física;
-- pgTAP financeiro foi preparado, mas a sequência local Supabase das Etapas 05–08 ainda precisa ser executada.
+- a sequência completa de sete migrations foi reaplicada na pilha Supabase local e os 123 testes pgTAP, incluindo o financeiro, foram aprovados.
 
-Não houve migration remota, deploy, merge, gateway financeiro, transação bancária real ou uso de dados reais. A Etapa 07 também permanece com validação Supabase/pgTAP pendente; as migrations 05–08 não estão homologadas.
+Não houve migration remota, deploy, merge, gateway financeiro, transação bancária real ou uso de dados reais. As migrations 05–08 permanecem pendentes de homologação remota, backup e restauração.
