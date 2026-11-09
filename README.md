@@ -18,6 +18,7 @@ Esta branch contém uma demonstração vertical navegável em português brasile
 - diário alimentar contextual e acompanhamento de hábitos/metas no prontuário;
 - avaliação nutricional estruturada, recordatório de 24 horas e evolução clínica consolidada;
 - agenda profissional diária, semanal e mensal, recorrências, conflitos e serviços administrativos;
+- central de documentos com avaliação, evolução, plano alimentar versionado e acompanhamento em PDF A4;
 - financeiro administrativo com cobranças, recebimentos parciais, estornos, despesas e indicadores;
 - testes unitários, de componentes e contratos de segurança.
 
@@ -79,6 +80,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Etapa 06 — avaliação nutricional completa](docs/ETAPA_06_AVALIACAO_COMPLETA.md)
 - [Etapa 07 — agenda profissional](docs/ETAPA_07_AGENDA_PROFISSIONAL.md)
 - [Etapa 08 — financeiro do consultório](docs/ETAPA_08_FINANCEIRO.md)
+- [Etapa 09 — documentos e relatórios em PDF](docs/ETAPA_09_DOCUMENTOS_PDF.md)
 
 ## Limites de produção
 

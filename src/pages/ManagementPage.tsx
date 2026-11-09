@@ -7,7 +7,7 @@ const modules = [
   { icon: Stethoscope, title: 'Serviços e valores', description: 'Cadastre consultas, retornos e duração padrão.', status: 'Disponível abaixo', tone: 'teal' },
   { icon: UsersRound, title: 'Equipe e permissões', description: 'Perfis por organização com acesso mínimo necessário.', status: 'RLS preparada', tone: 'violet' },
   { icon: Banknote, title: 'Financeiro', description: 'Cobranças, recebimentos e despesas, sem dados clínicos.', status: 'Disponível', tone: 'amber', href:'/financeiro' },
-  { icon: FileBarChart, title: 'Relatórios', description: 'Indicadores operacionais sem exposição clínica indevida.', status: 'Planejado', tone: 'slate' },
+  { icon: FileBarChart, title: 'Documentos e relatórios', description: 'Gere PDFs clínicos localmente com seleção de conteúdo.', status: 'Disponível', tone: 'slate', href:'/documentos' },
   { icon: Settings2, title: 'Configurações', description: 'Dados do consultório, fuso e preferências.', status: 'Planejado', tone: 'slate' },
 ]
 

@@ -75,8 +75,13 @@ export const demoWorkspace: NutritionWorkspace = {
         ] },
       ],
       revisions: [
-        { version: 1, savedAt: '2026-10-22T14:00:00.000Z', summary: 'Estrutura inicial criada' },
-        { version: 2, savedAt: DEMO_NOW, summary: 'Horários e orientações ajustados' },
+        { version: 1, savedAt: '2026-10-22T14:00:00.000Z', summary: 'Estrutura inicial criada', meals: [
+          { id: 'meal-breakfast-v1', name: 'Café da manhã', time: '08:00', guidance: 'Observar a saciedade.', foods: [{ id: 'food-v1', name: 'Item definido pelo profissional', quantity: 'Porção individualizada' }] },
+        ] },
+        { version: 2, savedAt: DEMO_NOW, summary: 'Horários e orientações ajustados', meals: [
+          { id: 'meal-breakfast', name: 'Café da manhã', time: '07:30', guidance: 'Realizar com calma e observar a saciedade.', foods: [{ id: 'food-1', name: 'Item definido pelo profissional', quantity: 'Porção individualizada' }, { id: 'food-2', name: 'Fruta de preferência', quantity: '1 porção orientada' }] },
+          { id: 'meal-lunch', name: 'Almoço', time: '12:30', guidance: 'Priorizar variedade e ambiente sem distrações.', foods: [{ id: 'food-3', name: 'Composição definida em consulta', quantity: 'Conforme orientação' }] },
+        ] },
       ],
     },
   ],

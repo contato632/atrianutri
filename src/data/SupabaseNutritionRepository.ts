@@ -193,6 +193,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
           version: Number(version.version),
           savedAt: String(version.created_at),
           summary: String(version.change_summary ?? ''),
+          meals: decodeMeals(version.meals ?? []),
         })),
       }
     })
@@ -359,7 +360,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       id: String(result.saved_plan_id),
       version: Number(result.saved_version),
       updatedAt: String(result.saved_at),
-      revisions: [...plan.revisions, { version: Number(result.saved_version), savedAt: String(result.saved_at), summary }],
+      revisions: [...plan.revisions, { version: Number(result.saved_version), savedAt: String(result.saved_at), summary, meals: structuredClone(plan.meals) }],
     }
   }
 

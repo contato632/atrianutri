@@ -53,6 +53,7 @@ export interface PlanRevision {
   version: number
   savedAt: string
   summary: string
+  meals?: Meal[]
 }
 
 export interface MealPlan {

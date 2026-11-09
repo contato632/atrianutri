@@ -46,6 +46,18 @@ describe('frontend security contract', () => {
     expect(css).toContain('.mobile-tabs')
     expect(css).toContain('@media (max-width: 900px)')
   })
+
+  it('gera documentos clínicos localmente e mantém notas privadas fora do conteúdo', () => {
+    const renderer = readFileSync(join(root, 'src/lib/nutritionPdf.ts'), 'utf8')
+    const documents = readFileSync(join(root, 'src/domain/documents.ts'), 'utf8')
+    const page = readFileSync(join(root, 'src/pages/DocumentsPage.tsx'), 'utf8')
+    expect(renderer).toContain("from 'jspdf'")
+    expect(renderer).not.toMatch(/fetch\(|XMLHttpRequest|https?:\/\//)
+    expect(documents).not.toContain('professionalPrivateNote')
+    expect(documents).not.toContain('profile?.professionalNotes')
+    expect(page).toContain('authorized')
+    expect(page).toContain('Acesso clínico necessário')
+  })
 })
 
 describe('migration security contract', () => {

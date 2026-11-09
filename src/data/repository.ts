@@ -90,7 +90,7 @@ export class DemoNutritionRepository implements NutritionRepository {
       id: plan.id || id('plan'),
       version: nextVersion,
       updatedAt: savedAt,
-      revisions: [...(existing?.revisions ?? []), { version: nextVersion, savedAt, summary }],
+      revisions: [...(existing?.revisions ?? []), { version: nextVersion, savedAt, summary, meals: clone(plan.meals) }],
     }
     this.data.mealPlans = [saved, ...this.data.mealPlans.filter((item) => item.id !== saved.id)]
     return clone(saved)

@@ -45,6 +45,8 @@ Diário e hábitos também usam chaves compostas, submissão idempotente e RPCs 
 
 Avaliações completas e recordatórios seguem o mesmo padrão transacional. A evolução é uma projeção no frontend sobre fontes existentes — antropometria, hábitos, planos e avaliações — e não duplica seus históricos no banco.
 
+A Central de Documentos também é uma projeção local: ela recebe somente o workspace já autorizado, seleciona registros existentes e desenha o PDF A4 no navegador. O gerador não chama APIs externas, não persiste Blobs e não inclui notas privadas do diário, metas ou anamnese. Observações profissionais restritas exigem seleção explícita. O conteúdo histórico das versões do plano é mantido no contrato de domínio para que a versão escolhida, e não apenas a atual, seja impressa.
+
 A agenda usa RPCs para todas as mutações. Uma constraint de exclusão GiST torna o PostgreSQL a autoridade contra sobreposição do mesmo profissional; profissionais distintos podem ocupar o mesmo intervalo. Recorrências usam hora civil em timezone IANA na criação e persistem ocorrências em `timestamptz`, com limite de quantidade e horizonte. Compromissos particulares guardam somente um título neutro na agenda operacional.
 
 ## Autorização proposta

@@ -15,6 +15,7 @@
 - avaliação estruturada, recordatório de 24 horas e evolução consolidada;
 - criação, remarcação, cancelamento, recorrência e conflito de agenda;
 - cobranças, recebimentos parciais, parcelamento manual, estornos, vencimentos e despesas;
+- quatro documentos PDF, versão de plano selecionada, privacidade, A4 e paginação extensa;
 - confirmação server-side e conflitos do adaptador Supabase;
 - restauração de sessão, exigência de MFA, logout e sessão expirada;
 - validação do formulário de paciente;
@@ -39,6 +40,7 @@ Os SQLs pgTAP cobrem duas organizações, múltiplos papéis, recepção, compro
 7. Criar e editar uma entrada do diário e acompanhar uma meta individualizada.
 8. Recarregar a página e confirmar que alterações da sessão desaparecem, como informado.
 9. Criar, remarcar e cancelar compromisso; alternar dia, semana e mês e conferir o filtro profissional.
+10. Gerar a prévia de cada documento com CRN fictício e confirmar que o download corresponde à prévia revisada.
 
 ## Itens que exigem infraestrutura antes de serem testados
 

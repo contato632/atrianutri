@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { ProfessionalAuthPanel } from './auth/ProfessionalAuthPanel'
@@ -19,6 +19,8 @@ import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
 import type { NutritionRepository } from './data/repository'
 import { getSupabaseRuntime, type SupabaseRuntime } from './lib/supabase'
 
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then((module) => ({ default: module.DocumentsPage })))
+
 type WorkspaceRoutesProps = {
   repository?: NutritionRepository
   mode?: 'demo' | 'supabase'
@@ -29,6 +31,8 @@ type WorkspaceRoutesProps = {
 }
 
 function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, onOrganizationChange, onSignOut }: WorkspaceRoutesProps) {
+  const membership = identity?.memberships.find((item) => item.organizationId === organizationId) ?? identity?.memberships[0]
+  const documentsAuthorized = mode === 'demo' || Boolean(membership?.clinicalAccess && membership.role !== 'reception')
   return (
     <WorkspaceProvider repository={repository}>
       <BrowserRouter>
@@ -42,6 +46,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
             <Route path="gestao" element={<ManagementPage />} />
             <Route path="agenda" element={<AgendaPage />} />
             <Route path="financeiro" element={<FinancialPage />} />
+            <Route path="documentos" element={<Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense>} />
             {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
