@@ -82,6 +82,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Etapa 08 — financeiro do consultório](docs/ETAPA_08_FINANCEIRO.md)
 - [Etapa 09 — documentos e relatórios em PDF](docs/ETAPA_09_DOCUMENTOS_PDF.md)
 - [Etapa 10 — consolidação e checklist de homologação](docs/ETAPA_10_HOMOLOGACAO_PRODUCAO.md)
+- [Etapa 11 — preparação da homologação remota](docs/ETAPA_11_HOMOLOGACAO_REMOTA.md)
 
 ## Limites de produção
 
