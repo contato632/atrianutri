@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import type { AssessmentInput, PatientAdministrative } from '../domain/models'
 import { calculateBmi, interpretAdultBmi } from '../domain/nutrition'
 import { assessmentSchema } from '../domain/validation'
+import { currentDateInBahia } from '../lib/format'
 
 const numberOrUndefined = (value: FormDataEntryValue | null) => value === null || value === '' ? undefined : Number(value)
 
@@ -45,7 +46,7 @@ export function AssessmentForm({ patients, initialPatientId, onSubmit, onCancel 
     <form className="form-stack" onSubmit={submit} noValidate>
       <div className="field-grid field-grid--2">
         <label className="field"><span>Paciente</span><select name="patientId" defaultValue={initialPatientId ?? ''}><option value="" disabled>Selecione</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.fullName}</option>)}</select>{errors.patientId && <small className="field-error">{errors.patientId}</small>}</label>
-        <label className="field"><span>Data da avaliação</span><input name="assessedAt" type="date" defaultValue="2026-11-08" />{errors.assessedAt && <small className="field-error">{errors.assessedAt}</small>}</label>
+        <label className="field"><span>Data da avaliação</span><input name="assessedAt" type="date" defaultValue={currentDateInBahia()} max={currentDateInBahia()} />{errors.assessedAt && <small className="field-error">{errors.assessedAt}</small>}</label>
       </div>
       <div className="form-section-heading"><span>Medidas principais</span><p>Use valores aferidos e revise antes de salvar.</p></div>
       <div className="field-grid field-grid--4">

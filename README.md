@@ -57,7 +57,7 @@ O frontend não aceita a referência conhecida do AtriaClinic. Nunca adicione `s
 
 ## Banco Supabase
 
-A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05 a 08 estão somente versionadas e **não foram aplicadas remotamente**. As sete migrations foram reaplicadas sequencialmente na pilha Supabase local descartável e passaram em 123 testes pgTAP. A interface continua bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
+A migration de fundação `20261108122833_atrianutri_foundation.sql` foi aplicada ao Supabase exclusivo `zwnoxycxhlihqxhutlcy` em 08/11/2026. As migrations complementares das Etapas 05 a 10 estão somente versionadas e **não foram aplicadas remotamente**. As oito migrations foram reaplicadas sequencialmente na pilha Supabase local descartável e passaram em 123 testes pgTAP. A interface continua bloqueada para dados reais até backup/restauração e homologação remota de Auth/RLS.
 
 Testes locais reais com contas fictícias:
 
@@ -81,6 +81,7 @@ Não execute esta migration no projeto AtriaClinic `tbbaiowzduqriwdjeacd`.
 - [Etapa 07 — agenda profissional](docs/ETAPA_07_AGENDA_PROFISSIONAL.md)
 - [Etapa 08 — financeiro do consultório](docs/ETAPA_08_FINANCEIRO.md)
 - [Etapa 09 — documentos e relatórios em PDF](docs/ETAPA_09_DOCUMENTOS_PDF.md)
+- [Etapa 10 — consolidação e checklist de homologação](docs/ETAPA_10_HOMOLOGACAO_PRODUCAO.md)
 
 ## Limites de produção
 

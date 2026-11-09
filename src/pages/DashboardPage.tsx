@@ -1,7 +1,7 @@
 import { ArrowRight, CalendarCheck2, CheckCircle2, ClipboardPlus, Clock3, ListTodo, Plus, TrendingDown, Users, UtensilsCrossed } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LoadingState } from '../components/LoadingState'
-import { formatDate, formatDateTime, initials } from '../lib/format'
+import { APP_TIME_ZONE, currentDateInBahia, formatDate, initials, relativeDateLabel } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
 
 export function DashboardPage() {
@@ -9,7 +9,8 @@ export function DashboardPage() {
   if (loading) return <LoadingState lines={6} />
 
   const activePatients = workspace.patients.filter((patient) => patient.status !== 'paused')
-  const upcoming = workspace.patients.filter((patient) => patient.nextAppointment).sort((a, b) => (a.nextAppointment ?? '').localeCompare(b.nextAppointment ?? '')).slice(0, 3)
+  const today = currentDateInBahia()
+  const upcoming = workspace.patients.filter((patient) => patient.nextAppointment && currentDateInBahia(new Date(patient.nextAppointment)) >= today).sort((a, b) => (a.nextAppointment ?? '').localeCompare(b.nextAppointment ?? '')).slice(0, 3)
   const recentAssessments = [...workspace.assessments].sort((a, b) => b.assessedAt.localeCompare(a.assessedAt)).slice(0, 3)
   const draftPlans = workspace.mealPlans.filter((plan) => plan.status === 'draft')
 
@@ -29,14 +30,14 @@ export function DashboardPage() {
 
       <div className="dashboard-grid">
         <section className="panel dashboard-schedule">
-          <header className="panel__header"><div><span className="eyebrow">Agenda</span><h3>Próximas consultas</h3></div><button type="button" className="text-button">Ver agenda <ArrowRight size={15} /></button></header>
+          <header className="panel__header"><div><span className="eyebrow">Agenda</span><h3>Próximas consultas</h3></div><Link to="/agenda" className="text-button">Ver agenda <ArrowRight size={15} /></Link></header>
           <div className="appointment-list">
-            {upcoming.map((patient, index) => <article className="appointment-item" key={patient.id}>
-              <div className="appointment-time"><strong>{new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }).format(new Date(patient.nextAppointment!))}</strong><span>{index === 0 ? 'Amanhã' : formatDate(patient.nextAppointment)}</span></div>
+            {upcoming.map((patient) => { const appointment = workspace.appointments.find((item) => item.patientId === patient.id && item.startsAt === patient.nextAppointment); const duration = appointment ? Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / 60_000) : 50; return <article className="appointment-item" key={patient.id}>
+              <div className="appointment-time"><strong>{new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIME_ZONE }).format(new Date(patient.nextAppointment!))}</strong><span>{relativeDateLabel(patient.nextAppointment!)}</span></div>
               <span className="avatar avatar--sm">{initials(patient.fullName)}</span>
-              <div className="appointment-person"><strong>{patient.fullName}</strong><span>{index === 1 ? 'Retorno nutricional' : 'Acompanhamento'}</span></div>
-              <span className="tag tag--subtle"><Clock3 size={13} /> 50 min</span>
-            </article>)}
+              <div className="appointment-person"><strong>{patient.fullName}</strong><span>{appointment?.category === 'follow-up' ? 'Retorno nutricional' : 'Acompanhamento'}</span></div>
+              <span className="tag tag--subtle"><Clock3 size={13} /> {duration} min</span>
+            </article>})}
           </div>
         </section>
 

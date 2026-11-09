@@ -6,6 +6,9 @@ test('mantém navegação e conteúdo íntegros no desktop', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Bom dia, Marina.' })).toBeVisible()
   await expect(page.locator('.sidebar')).toBeVisible()
   await expect(page.locator('.mobile-tabs')).toBeHidden()
+  await expect(page.locator('.topbar__title span')).not.toHaveText('Domingo, 8 de novembro')
+  await page.getByRole('link', { name: 'Ver agenda' }).click()
+  await expect(page).toHaveURL(/\/agenda$/)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
 

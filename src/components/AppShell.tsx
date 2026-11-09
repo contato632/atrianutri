@@ -1,8 +1,9 @@
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FileText, FlaskConical, HelpCircle, Home, LogOut, Menu, Settings, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FileText, FlaskConical, Home, LogOut, Menu, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
 import type { ProfessionalIdentity } from '../auth/types'
+import { formatLongDateInBahia } from '../lib/format'
 
 const primaryNavigation = [
   { to: '/', label: 'Início', icon: Home },
@@ -15,7 +16,7 @@ const primaryNavigation = [
 ]
 
 const pageMeta: Record<string, { title: string; eyebrow: string }> = {
-  '/': { title: 'Visão geral', eyebrow: 'Domingo, 8 de novembro' },
+  '/': { title: 'Visão geral', eyebrow: '' },
   '/pacientes': { title: 'Pacientes', eyebrow: 'Cuidado contínuo' },
   '/avaliacoes': { title: 'Avaliações', eyebrow: 'Evolução nutricional' },
   '/planos': { title: 'Planos alimentares', eyebrow: 'Planejamento individualizado' },
@@ -46,7 +47,8 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const basePath = `/${location.pathname.split('/')[1]}`
-  const meta = pageMeta[location.pathname] ?? pageMeta[basePath] ?? { title: 'AtriaNutri', eyebrow: 'AtriaCare' }
+  const configuredMeta = pageMeta[location.pathname] ?? pageMeta[basePath] ?? { title: 'AtriaNutri', eyebrow: 'AtriaCare' }
+  const meta = location.pathname === '/' ? { ...configuredMeta, eyebrow: formatLongDateInBahia() } : configuredMeta
 
   return (
     <div className={`app-shell ${collapsed ? 'app-shell--collapsed' : ''}`}>
@@ -54,8 +56,7 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
         <div className="sidebar__brand"><Brand compact={collapsed} /></div>
         <NavItems />
         <div className="sidebar__secondary">
-          <button type="button" className="nav-item"><HelpCircle size={19} /><span>Ajuda</span></button>
-          {mode === 'supabase' ? <NavLink to="/seguranca" className={({ isActive }) => `nav-item ${isActive ? 'nav-item--active' : ''}`}><ShieldCheck size={19} /><span>Segurança</span></NavLink> : <button type="button" className="nav-item"><Settings size={19} /><span>Configurações</span></button>}
+          {mode === 'supabase' && <NavLink to="/seguranca" className={({ isActive }) => `nav-item ${isActive ? 'nav-item--active' : ''}`}><ShieldCheck size={19} /><span>Segurança</span></NavLink>}
         </div>
         <button type="button" className="collapse-button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}>
           {collapsed ? <ChevronRight size={17} /> : <><ChevronLeft size={17} /><span>Recolher menu</span></>}

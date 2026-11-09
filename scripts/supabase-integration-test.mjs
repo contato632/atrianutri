@@ -281,6 +281,60 @@ try {
 }
 assert(crossAppointmentDenied, 'RPC da agenda não bloqueou outra organização')
 
+const chargeResult = await request('/rest/v1/rpc/create_financial_charge', { method: 'POST', token: tokenA, body: {
+  p_organization_id: organizationA, p_patient_id: patientA.id, p_professional_user_id: userA.id,
+  p_appointment_id: appointment.saved_id, p_service_id: service.saved_id,
+  p_description: 'Cobrança fictícia de integração', p_amount_cents: 18000,
+  p_due_date: '2026-12-10', p_administrative_note: 'Teste financeiro local.',
+} })
+const charge = Array.isArray(chargeResult) ? chargeResult[0] : chargeResult
+assert(charge?.saved_id && charge?.saved_updated_at, 'cobrança não recebeu confirmação transacional')
+
+let crossChargeDenied = false
+try {
+  await request('/rest/v1/rpc/create_financial_charge', { method: 'POST', token: tokenA, body: {
+    p_organization_id: organizationB, p_patient_id: patientB, p_professional_user_id: userB.id,
+    p_appointment_id: null, p_service_id: null, p_description: 'Tentativa financeira cruzada',
+    p_amount_cents: 10000, p_due_date: '2026-12-10', p_administrative_note: '',
+  } })
+} catch (error) {
+  crossChargeDenied = error instanceof Error && error.message.includes('403')
+}
+assert(crossChargeDenied, 'RPC financeira não bloqueou outra organização')
+
+const paymentKey = randomUUID()
+const paymentResult = await request('/rest/v1/rpc/record_financial_payment', { method: 'POST', token: tokenA, body: {
+  p_charge_id: charge.saved_id, p_amount_cents: 18000, p_method: 'pix', p_received_at: '2026-12-10',
+  p_administrative_note: 'Recebimento fictício.', p_idempotency_key: paymentKey,
+  p_installment_number: 1, p_installment_count: 1,
+} })
+const payment = Array.isArray(paymentResult) ? paymentResult[0] : paymentResult
+assert(payment?.saved_id && payment?.saved_at, 'recebimento não recebeu confirmação transacional')
+
+let duplicatePaymentDenied = false
+try {
+  await request('/rest/v1/rpc/record_financial_payment', { method: 'POST', token: tokenA, body: {
+    p_charge_id: charge.saved_id, p_amount_cents: 18000, p_method: 'pix', p_received_at: '2026-12-10',
+    p_administrative_note: 'Repetição intencional.', p_idempotency_key: paymentKey,
+    p_installment_number: 1, p_installment_count: 1,
+  } })
+} catch (error) {
+  duplicatePaymentDenied = error instanceof Error && error.message.includes('409')
+}
+assert(duplicatePaymentDenied, 'chave de idempotência não bloqueou recebimento duplicado')
+
+const reversalResult = await request('/rest/v1/rpc/reverse_financial_payment', { method: 'POST', token: tokenA, body: {
+  p_payment_id: payment.saved_id, p_idempotency_key: randomUUID(), p_administrative_note: 'Estorno fictício integral.',
+} })
+const reversal = Array.isArray(reversalResult) ? reversalResult[0] : reversalResult
+assert(reversal?.saved_id && reversal?.charge_id === charge.saved_id && Number(reversal.amount_cents) === 18000, 'estorno compensatório não foi confirmado')
+
+await request('/rest/v1/rpc/cancel_financial_charge', { method: 'POST', token: tokenA, body: {
+  p_charge_id: charge.saved_id, p_expected_updated_at: charge.saved_updated_at,
+} })
+const canceledCharges = await request(`/rest/v1/financial_charges?select=id,canceled_at&id=eq.${charge.saved_id}`, { token: tokenA })
+assert(canceledCharges.length === 1 && canceledCharges[0].canceled_at, 'cancelamento financeiro após estorno não foi confirmado')
+
 await request('/rest/v1/rpc/cancel_appointment', { method: 'POST', token: tokenA, body: {
   p_appointment_id: appointment.saved_id, p_expected_updated_at: appointment.saved_updated_at, p_scope: 'occurrence',
 } })
@@ -313,5 +367,7 @@ console.log('PASS: serviço e agendamento persistidos por RPC')
 console.log('PASS: sobreposição do mesmo profissional bloqueada no PostgreSQL')
 console.log('PASS: escrita cruzada da agenda bloqueada entre organizações')
 console.log('PASS: cancelamento lógico da ocorrência confirmado')
+console.log('PASS: cobrança, recebimento, idempotência, estorno e cancelamento financeiros confirmados')
+console.log('PASS: escrita financeira cruzada bloqueada entre organizações')
 console.log('PASS: enrollment e verificação TOTP elevaram a sessão')
 console.log('PASS: nenhum dado ou token real foi utilizado')

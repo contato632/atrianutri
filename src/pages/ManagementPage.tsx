@@ -14,11 +14,11 @@ const modules = [
 export function ManagementPage() {
   return (
     <div className="page-stack">
-      <section className="section-intro"><div><h2>Gestão do consultório</h2><p>Módulos administrativos independentes do AtriaClinic e do AtriaMind.</p></div></section>
+      <section className="section-intro"><div><h2>Gestão do consultório</h2><p>Módulos administrativos e clínicos integrados ao AtriaNutri.</p></div></section>
       <section className="management-note"><LockKeyhole size={18} /><div><strong>Separação por organização desde a fundação</strong><p>Cada registro administrativo e clínico é vinculado à organização. As políticas versionadas impedem acesso cruzado entre clínicas e profissionais.</p></div></section>
       <section className="module-grid">{modules.map(({ icon: Icon, title, description, status, tone, href }) => <article className="module-card panel" key={title}><span className={`module-icon ${tone}`}><Icon size={20} /></span><div><h3>{title}</h3><p>{description}</p></div><footer><span>{status}</span>{href?<Link to={href} aria-label={`Abrir ${title}`}><ArrowRight size={16}/></Link>:<button type="button" aria-label={`Abrir ${title}`} disabled><ArrowRight size={16} /></button>}</footer></article>)}</section>
       <ServiceManagement />
-      <section className="panel reuse-panel"><div><span className="eyebrow">Decisão de arquitetura</span><h3>Reuso responsável do AtriaClinic</h3><p>Foram aproveitados os padrões de navegação, isolamento organizacional, papéis, RLS, auditoria e segurança de sessão. Código, chaves, projeto Supabase e dados permanecem totalmente separados.</p></div><span className="independent-badge"><LockKeyhole size={15} /> Produto independente</span></section>
+      <section className="panel reuse-panel"><div><span className="eyebrow">Arquitetura segura</span><h3>Isolamento desde a fundação</h3><p>Navegação, papéis, RLS, auditoria e segurança de sessão seguem contratos próprios. Código, chaves, projeto Supabase e dados permanecem isolados.</p></div><span className="independent-badge"><LockKeyhole size={15} /> Produto independente</span></section>
     </div>
   )
 }

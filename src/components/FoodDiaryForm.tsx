@@ -2,6 +2,7 @@ import { LoaderCircle, Plus, Save, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { FoodDiaryEntry, FoodDiaryEntryInput, FoodDiaryMealType } from '../domain/models'
 import { foodDiaryEntrySchema } from '../domain/validation'
+import { currentDateInBahia } from '../lib/format'
 
 const mealOptions: Array<[FoodDiaryMealType, string]> = [
   ['breakfast', 'Café da manhã'], ['morning-snack', 'Lanche da manhã'], ['lunch', 'Almoço'],
@@ -9,6 +10,7 @@ const mealOptions: Array<[FoodDiaryMealType, string]> = [
 ]
 
 export function FoodDiaryForm({ patientId, entry, onCancel, onSubmit }: { patientId: string; entry?: FoodDiaryEntry; onCancel: () => void; onSubmit: (input: FoodDiaryEntryInput) => Promise<void> }) {
+  const today = currentDateInBahia()
   const [foods, setFoods] = useState(entry?.foods ?? [{ id: crypto.randomUUID(), name: '', quantity: '' }])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -28,7 +30,7 @@ export function FoodDiaryForm({ patientId, entry, onCancel, onSubmit }: { patien
 
   return <form className="form-stack diary-form" onSubmit={submit}>
     <div className="field-grid field-grid--4">
-      <label className="field"><span>Data</span><input type="date" name="entryDate" defaultValue={entry?.entryDate ?? new Date().toISOString().slice(0, 10)} max={new Date().toISOString().slice(0, 10)} required /></label>
+      <label className="field"><span>Data</span><input type="date" name="entryDate" defaultValue={entry?.entryDate ?? today} max={today} required /></label>
       <label className="field"><span>Horário</span><input type="time" name="mealTime" defaultValue={entry?.mealTime ?? '12:00'} required /></label>
       <label className="field field--span-2"><span>Tipo de refeição</span><select name="mealType" defaultValue={entry?.mealType ?? 'lunch'}>{mealOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     </div>

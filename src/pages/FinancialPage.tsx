@@ -4,17 +4,19 @@ import { Modal } from '../components/Modal'
 import { chargeBalanceCents, chargeStatus, financialSummary, monthlyFinancialEvolution, netReceivedCents } from '../domain/financial'
 import type { FinancialCharge, FinancialExpense, FinancialPaymentInput } from '../domain/models'
 import { financialChargeSchema, financialExpenseSchema, financialPaymentSchema } from '../domain/validation'
-import { formatDate } from '../lib/format'
+import { currentDateInBahia, formatDate } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
 
 const money=(cents:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(cents/100)
-const today='2026-11-09'
+const today=currentDateInBahia()
+const currentMonth=today.slice(0,7)
+const currentMonthEnd=new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7)),0)).getUTCDate()
 const statusLabels={pending:'Pendente','partially-paid':'Parcialmente paga',paid:'Paga',overdue:'Vencida',canceled:'Cancelada'} as const
 const methodLabels={pix:'Pix',cash:'Dinheiro','credit-card':'Cartão de crédito','debit-card':'Cartão de débito','bank-transfer':'Transferência bancária',other:'Outros'} as const
 const cents=(value:FormDataEntryValue|null)=>Math.round(Number(String(value??'').replace(',','.'))*100)
 
 export function FinancialPage(){
- const {workspace,cancelFinancialCharge,reverseFinancialPayment}=useWorkspace();const [start,setStart]=useState('2026-10-01');const [end,setEnd]=useState('2026-11-30');const [professional,setProfessional]=useState('all');const [situation,setSituation]=useState('all');const [search,setSearch]=useState('');const [tab,setTab]=useState<'charges'|'expenses'>('charges');const [chargeForm,setChargeForm]=useState(false);const [paymentCharge,setPaymentCharge]=useState<FinancialCharge>();const [detailCharge,setDetailCharge]=useState<FinancialCharge>();const [expenseForm,setExpenseForm]=useState<FinancialExpense|null|undefined>(undefined)
+ const {workspace,cancelFinancialCharge,reverseFinancialPayment}=useWorkspace();const [start,setStart]=useState(`${currentMonth}-01`);const [end,setEnd]=useState(`${currentMonth}-${currentMonthEnd}`);const [professional,setProfessional]=useState('all');const [situation,setSituation]=useState('all');const [search,setSearch]=useState('');const [tab,setTab]=useState<'charges'|'expenses'>('charges');const [chargeForm,setChargeForm]=useState(false);const [paymentCharge,setPaymentCharge]=useState<FinancialCharge>();const [detailCharge,setDetailCharge]=useState<FinancialCharge>();const [expenseForm,setExpenseForm]=useState<FinancialExpense|null|undefined>(undefined)
  const charges=workspace.financialCharges.filter((charge)=>{const patient=workspace.patients.find((item)=>item.id===charge.patientId);const status=chargeStatus(charge,workspace.financialPayments,today);return(professional==='all'||charge.professionalId===professional)&&(situation==='all'||status===situation)&&(!search||patient?.fullName.toLowerCase().includes(search.toLowerCase()))})
  const summary=financialSummary(workspace.financialCharges,workspace.financialPayments,workspace.financialExpenses,start,end,today);const evolution=monthlyFinancialEvolution(workspace.financialPayments,workspace.financialExpenses);const maxBar=Math.max(1,...evolution.flatMap((item)=>[item.receivedCents,item.expensesCents]));const professionals=Array.from(new Map(workspace.appointments.map((item)=>[item.professionalId,item.professionalLabel])).entries())
  return <div className="page-stack financial-page"><section className="section-intro"><div><h2>Financeiro do consultório</h2><p>Receitas efetivas, contas a receber e despesas administrativas — sem dados clínicos.</p></div><div className="financial-actions"><button className="button button--soft" onClick={()=>setExpenseForm(null)}><TrendingDown size={15}/>Nova despesa</button><button className="button button--primary" onClick={()=>setChargeForm(true)}><Plus size={15}/>Nova cobrança</button></div></section>
