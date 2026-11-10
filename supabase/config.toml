@@ -65,5 +65,8 @@ verify_enabled = true
 [edge_runtime]
 enabled = false
 
+[functions.clinical-intelligence]
+verify_jwt = true
+
 [analytics]
 enabled = false

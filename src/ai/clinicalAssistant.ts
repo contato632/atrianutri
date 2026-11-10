@@ -94,6 +94,7 @@ export class UsageLedger {
   assertWithinLimit(organizationId: string, professionalId: string) { if (this.rows.filter((row) => row.organizationId === organizationId && row.professionalId === professionalId).length >= this.limitPerScope) throw new Error('Limite demonstrativo de utilização atingido para esta sessão.') }
   record(row: UsageMetadata) { this.rows.push(structuredClone(row)) }
   list() { return structuredClone(this.rows) }
+  utilization(organizationId: string, professionalId: string) { const used=this.rows.filter((row)=>row.organizationId===organizationId&&row.professionalId===professionalId).length; return { used,limit:this.limitPerScope,remaining:Math.max(0,this.limitPerScope-used) } }
 }
 
 export async function runClinicalAiOperation(input: { provider: ClinicalAiProvider; request: ClinicalAiRequest; scope: AiAccessScope; ledger: UsageLedger; timeoutMs?: number; signal?: AbortSignal }) {
