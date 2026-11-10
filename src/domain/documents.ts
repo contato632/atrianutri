@@ -1,4 +1,5 @@
 import type { Assessment, Meal, NutritionWorkspace } from './models'
+import { calculateMealNutrition, calculatePlanNutrition, nutrientLabels, nutrientUnits } from './nutritionCalculation'
 
 export type NutritionDocumentType = 'evaluation' | 'evolution' | 'meal-plan' | 'follow-up'
 
@@ -48,7 +49,7 @@ export type NutritionDocument = {
   fileName: string
 }
 
-export const documentDefinitions: Record<NutritionDocumentType, { label: string; description: string; title: string; sections: { id: string; label: string; restricted?: boolean }[] }> = {
+export const documentDefinitions: Record<NutritionDocumentType, { label: string; description: string; title: string; sections: { id: string; label: string; restricted?: boolean; defaultSelected?: boolean }[] }> = {
   evaluation: {
     label: 'Avaliação Nutricional', description: 'Contexto, histórico, rotina, recordatório e antropometria registrados.', title: 'Relatório de Avaliação Nutricional',
     sections: [
@@ -68,7 +69,7 @@ export const documentDefinitions: Record<NutritionDocumentType, { label: string;
   },
   'meal-plan': {
     label: 'Plano Alimentar', description: 'Conteúdo manual da versão selecionada do plano alimentar.', title: 'Plano Alimentar',
-    sections: [{ id: 'patient', label: 'Identificação do paciente' }, { id: 'plan-meta', label: 'Identificação da versão' }, { id: 'meals', label: 'Refeições e orientações' }],
+    sections: [{ id: 'patient', label: 'Identificação do paciente' }, { id: 'plan-meta', label: 'Identificação da versão' }, { id: 'meals', label: 'Refeições e orientações' }, { id: 'nutrition-summary', label: 'Totais nutricionais calculados', defaultSelected: false }],
   },
   'follow-up': {
     label: 'Resumo de Acompanhamento', description: 'Síntese dos registros existentes, sem criar conclusões clínicas.', title: 'Resumo de Acompanhamento Nutricional',
@@ -101,19 +102,19 @@ export function defaultDocumentOptions(type: NutritionDocumentType, patientId: s
   const definition = documentDefinitions[type]
   return {
     type, patientId, title: definition.title, introduction: '', closingNotes: '',
-    sections: definition.sections.filter((section) => !section.restricted).map((section) => section.id),
+    sections: definition.sections.filter((section) => !section.restricted && section.defaultSelected !== false).map((section) => section.id),
     branding: defaultDocumentBranding(professionalName),
   }
 }
 
-export function resolvePlanMeals(workspace: NutritionWorkspace, planId: string | undefined, version: number | undefined): { title: string; version: number; meals: Meal[]; updatedAt: string } {
+export function resolvePlanMeals(workspace: NutritionWorkspace, planId: string | undefined, version: number | undefined): { title: string; version: number; meals: Meal[]; updatedAt: string; nutritionTargets: NutritionWorkspace['mealPlans'][number]['nutritionTargets'] } {
   const plan = workspace.mealPlans.find((item) => item.id === planId)
   if (!plan) throw new Error('Selecione um plano alimentar disponível para o paciente.')
   const targetVersion = version ?? plan.version
-  if (targetVersion === plan.version) return { title: plan.title, version: plan.version, meals: plan.meals, updatedAt: plan.updatedAt }
+  if (targetVersion === plan.version) return { title: plan.title, version: plan.version, meals: plan.meals, updatedAt: plan.updatedAt, nutritionTargets: plan.nutritionTargets }
   const revision = plan.revisions.find((item) => item.version === targetVersion && item.meals)
   if (!revision?.meals) throw new Error('O conteúdo desta versão não está disponível para impressão.')
-  return { title: plan.title, version: revision.version, meals: revision.meals, updatedAt: revision.savedAt }
+  return { title: plan.title, version: revision.version, meals: revision.meals, updatedAt: revision.savedAt, nutritionTargets: revision.nutritionTargets }
 }
 
 export function buildNutritionDocument(workspace: NutritionWorkspace, options: NutritionDocumentOptions): NutritionDocument {
@@ -179,6 +180,14 @@ export function buildNutritionDocument(workspace: NutritionWorkspace, options: N
       ...(meal.foods.length ? meal.foods.map((food) => [food.name, food.quantity]) : [['Nenhum item registrado', '—']]),
       ...(meal.guidance ? [['Orientações', meal.guidance]] : []),
     ] })
+    if (selected(options, 'nutrition-summary')) {
+      const totals = calculatePlanNutrition(plan.meals)
+      const keys = ['energyKcal', 'proteinG', 'carbohydrateG', 'fatG', 'fiberG', 'sodiumMg'] as const
+      blocks.push({ kind: 'table', id: 'nutrition-summary', title: 'Informações nutricionais calculadas', columns: ['Componente', 'Total disponível', 'Cobertura dos dados'], rows: keys.map((key) => [nutrientLabels[key], totals.completeness[key] === 'unavailable' ? 'Não disponível' : `${number(totals.values[key])} ${nutrientUnits[key]}`, totals.completeness[key] === 'complete' ? 'Completa para os itens do plano' : totals.completeness[key] === 'partial' ? 'Parcial — há itens sem dados' : 'Não analisada ou indisponível']) })
+      blocks.push({ kind: 'table', id: 'nutrition-by-meal', title: 'Distribuição por refeição', columns: ['Refeição', 'Energia', 'Proteínas'], rows: plan.meals.map((meal) => { const result = calculateMealNutrition(meal); return [meal.name, result.completeness.energyKcal === 'unavailable' ? 'Não disponível' : `${number(result.values.energyKcal)} kcal`, result.completeness.proteinG === 'unavailable' ? 'Não disponível' : `${number(result.values.proteinG)} g`] }) })
+      const sources = Array.from(new Set(plan.meals.flatMap((meal) => meal.foods.map((food) => food.composition ? `${food.composition.sourceName} — ${food.composition.sourceVersion}` : 'Composição não informada'))))
+      blocks.push({ kind: 'paragraphs', id: 'nutrition-sources', title: 'Fontes e limites', paragraphs: [`Fontes registradas nesta versão: ${sources.join('; ')}.`, totals.calculatedItemCount < totals.itemCount ? 'Os valores são parciais porque existem itens sem composição ou porção calculável.' : 'Os valores cobrem todos os itens desta versão.', 'Informações demonstrativas não substituem revisão e responsabilidade profissional.'] })
+    }
   }
 
   if (options.type === 'follow-up') {

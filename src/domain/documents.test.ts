@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { demoWorkspace } from '../data/demo-data'
 import { buildNutritionPdf } from '../lib/nutritionPdf'
 import { buildNutritionDocument, defaultDocumentOptions, resolvePlanMeals, type NutritionDocumentType } from './documents'
+import { catalogFoodById } from './foodCatalog'
+import { createCatalogFoodItem } from './mealPlanning'
 
 const branding = { clinicName: 'Clínica Fictícia', professionalName: 'Dra. Marina Costa', crn: 'CRN-5 00000', phone: '(71) 3000-0000', email: 'teste@example.com', address: 'Salvador, BA', showContacts: true, headerText: 'Documento de teste', footerText: 'Dados exclusivamente fictícios.', primaryColor: '#176fa5' }
 
@@ -41,6 +43,18 @@ describe('documentos nutricionais', () => {
     expect(versionTwo.meals).toHaveLength(2)
     const value = options('meal-plan'); value.planVersion = 1
     expect(JSON.stringify(buildNutritionDocument(demoWorkspace, value))).not.toContain('Almoço')
+  })
+
+  it('inclui informações nutricionais do snapshot somente por escolha explícita', () => {
+    const workspace = structuredClone(demoWorkspace)
+    workspace.mealPlans[0].meals[0].foods.push(createCatalogFoodItem(catalogFoodById('demo-banana')!, 'banana-pdf', { amount: 100, unit: 'g' }))
+    const value = options('meal-plan')
+    expect(value.sections).not.toContain('nutrition-summary')
+    value.sections.push('nutrition-summary')
+    const serialized = JSON.stringify(buildNutritionDocument(workspace, value))
+    expect(serialized).toContain('Informações nutricionais calculadas')
+    expect(serialized).toContain('Catálogo demonstrativo AtriaNutri')
+    expect(serialized).toContain('parciais')
   })
 
   it('exige identificação profissional e CRN', () => {

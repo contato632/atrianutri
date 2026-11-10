@@ -18,7 +18,7 @@ describe('SupabaseNutritionRepository meal plan persistence', () => {
     const repository = new SupabaseNutritionRepository(clientWithRpc(rpc), 'org-1')
     const saved = await repository.saveMealPlan(newPlan, 'Criação')
 
-    expect(rpc).toHaveBeenCalledWith('create_meal_plan_draft', expect.objectContaining({ p_organization_id: 'org-1', p_patient_id: 'patient-1' }))
+    expect(rpc).toHaveBeenCalledWith('create_meal_plan_draft_v2', expect.objectContaining({ p_organization_id: 'org-1', p_patient_id: 'patient-1', p_nutrition_targets: {} }))
     expect(saved).toEqual(expect.objectContaining({ id: 'server-plan-id', version: 1, updatedAt: '2026-11-08T12:00:00Z' }))
   })
 

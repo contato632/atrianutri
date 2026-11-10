@@ -271,20 +271,21 @@ where organization_id = 'a0000000-0000-4000-8000-000000000001'
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
 select results_eq(
-  $$select saved_version from public.save_meal_plan_version(
+  $$select saved_version from public.save_meal_plan_version_v2(
     'aa000000-0000-4000-8000-000000000001', 1,
-    'Plano A revisado', '[{"name":"Refeição revisada"}]'::jsonb, 'Revisão autorizada')$$,
+    'Plano A revisado', '[{"name":"Refeição revisada"}]'::jsonb,
+    '{"energyKcal":2000}'::jsonb, 'Revisão autorizada')$$,
   array[2],
   'authorized nutritionist saves the next version transactionally'
 );
 select throws_ok(
-  $$select * from public.save_meal_plan_version(
-    'aa000000-0000-4000-8000-000000000001', 1, 'Plano A', '[]'::jsonb, 'Versão obsoleta')$$,
+  $$select * from public.save_meal_plan_version_v2(
+    'aa000000-0000-4000-8000-000000000001', 1, 'Plano A', '[]'::jsonb, '{}'::jsonb, 'Versão obsoleta')$$,
   '40001', null, 'stale expected version is rejected as a conflict'
 );
 select throws_ok(
-  $$select * from public.save_meal_plan_version(
-    'bb000000-0000-4000-8000-000000000001', 0, 'Plano B', '[]'::jsonb, 'Acesso cruzado')$$,
+  $$select * from public.save_meal_plan_version_v2(
+    'bb000000-0000-4000-8000-000000000001', 0, 'Plano B', '[]'::jsonb, '{}'::jsonb, 'Acesso cruzado')$$,
   '42501', null, 'nutritionist A cannot version an organization B plan'
 );
 select results_eq(
@@ -292,6 +293,12 @@ select results_eq(
     where id = 'aa000000-0000-4000-8000-000000000001'$$,
   array[2],
   'transactional save confirms the server-side current version'
+);
+select results_eq(
+  $$select nutrition_targets from public.meal_plan_versions
+    where meal_plan_id='aa000000-0000-4000-8000-000000000001' and version=2$$,
+  array['{"energyKcal": 2000}'::jsonb],
+  'manual nutrition targets are preserved in the immutable version snapshot'
 );
 
 select * from finish();

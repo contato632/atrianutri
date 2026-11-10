@@ -39,7 +39,55 @@ export interface FoodItem {
   id: string
   name: string
   quantity: string
+  catalogFoodId?: string
+  portion?: FoodPortion
+  composition?: FoodCompositionSnapshot
+  approvedSubstitution?: ApprovedFoodSubstitution
 }
+
+export type NutrientKey = 'energyKcal' | 'proteinG' | 'carbohydrateG' | 'fatG' | 'fiberG' | 'sodiumMg'
+export type NutrientDatum = { status: 'known'; value: number } | { status: 'not-analyzed' | 'unavailable' }
+export type PortionUnit = 'g' | 'ml' | 'household'
+
+export interface HouseholdMeasureSnapshot {
+  id: string
+  label: string
+  equivalentAmount: number
+  equivalentUnit: 'g' | 'ml'
+}
+
+export interface FoodCompositionSnapshot {
+  foodName: string
+  category: string
+  preparation: string
+  sourceId: string
+  sourceName: string
+  sourceVersion: string
+  sourceLicense: string
+  demonstrative: boolean
+  referenceAmount: number
+  referenceUnit: 'g' | 'ml'
+  densityGPerMl?: number
+  nutrients: Record<NutrientKey, NutrientDatum>
+  householdMeasures: HouseholdMeasureSnapshot[]
+}
+
+export interface FoodPortion {
+  amount: number
+  unit: PortionUnit
+  measureId?: string
+}
+
+export interface ApprovedFoodSubstitution {
+  originalCatalogFoodId: string
+  originalName: string
+  replacementCatalogFoodId: string
+  replacementName: string
+  criterion: string
+  approvedAt: string
+}
+
+export type NutritionTargets = Partial<Record<NutrientKey, number>>
 
 export interface Meal {
   id: string
@@ -54,6 +102,7 @@ export interface PlanRevision {
   savedAt: string
   summary: string
   meals?: Meal[]
+  nutritionTargets?: NutritionTargets
 }
 
 export interface MealPlan {
@@ -64,6 +113,7 @@ export interface MealPlan {
   version: number
   updatedAt: string
   meals: Meal[]
+  nutritionTargets?: NutritionTargets
   revisions: PlanRevision[]
 }
 

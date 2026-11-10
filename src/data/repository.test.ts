@@ -36,11 +36,12 @@ describe('DemoNutritionRepository', () => {
   it('salva revisões do rascunho somente na instância de demonstração', async () => {
     const repository = new DemoNutritionRepository(empty)
     const patient = await repository.createPatient({ fullName: 'Paciente Teste', birthDate: '1990-01-01', phone: '(71) 99999-9999', email: 'teste@demo.local', status: 'active' })
-    const plan: MealPlan = { id: 'plan-test', patientId: patient.id, title: 'Plano manual', status: 'draft', version: 0, updatedAt: '', meals: [], revisions: [] }
+    const plan: MealPlan = { id: 'plan-test', patientId: patient.id, title: 'Plano manual', status: 'draft', version: 0, updatedAt: '', meals: [], nutritionTargets: { energyKcal: 2000 }, revisions: [] }
     const first = await repository.saveMealPlan(plan, 'Criação')
     const second = await repository.saveMealPlan({ ...first, title: 'Plano ajustado' }, 'Ajuste')
     expect(second.version).toBe(2)
     expect(second.revisions.map((item) => item.summary)).toEqual(['Criação', 'Ajuste'])
+    expect(second.revisions[0].nutritionTargets).toEqual({ energyKcal: 2000 })
   })
 
   it('cria e edita diário, meta e acompanhamento sem perder o vínculo do paciente', async () => {

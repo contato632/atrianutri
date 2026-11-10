@@ -17,6 +17,8 @@ import type {
   FoodDiaryEntry,
   FoodDiaryEntryInput,
   FoodDiaryMealType,
+  FoodCompositionSnapshot,
+  FoodPortion,
   HabitCheckIn,
   HabitCheckInInput,
   HabitGoal,
@@ -76,6 +78,10 @@ function decodeMeals(value: unknown): Meal[] {
         id: String(item.id ?? `food-${mealIndex}-${foodIndex}`),
         name: String(item.name ?? ''),
         quantity: String(item.quantity ?? ''),
+        catalogFoodId: item.catalogFoodId ? String(item.catalogFoodId) : undefined,
+        portion: item.portion && typeof item.portion === 'object' ? structuredClone(item.portion) as FoodPortion : undefined,
+        composition: item.composition && typeof item.composition === 'object' ? structuredClone(item.composition) as FoodCompositionSnapshot : undefined,
+        approvedSubstitution: item.approvedSubstitution && typeof item.approvedSubstitution === 'object' ? structuredClone(item.approvedSubstitution) as Meal['foods'][number]['approvedSubstitution'] : undefined,
       }
     }) : []
     return {
@@ -108,7 +114,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
       this.client.from('meal_plans').select('id,patient_id,title,status,current_version,updated_at').eq('organization_id', this.organizationId).neq('status', 'archived').order('updated_at', { ascending: false }),
-      this.client.from('meal_plan_versions').select('meal_plan_id,version,meals,change_summary,created_at').eq('organization_id', this.organizationId).order('version', { ascending: false }),
+      this.client.from('meal_plan_versions').select('meal_plan_id,version,meals,nutrition_targets,change_summary,created_at').eq('organization_id', this.organizationId).order('version', { ascending: false }),
       this.client.from('food_diary_entries').select('id,patient_id,entry_date,meal_time,meal_type,foods,notes,eating_context,hunger_before,satiety_after,routine_changes,source,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('entry_date', { ascending: false }).order('meal_time', { ascending: false }),
       this.client.from('habit_goals').select('id,patient_id,title,description,status,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('updated_at', { ascending: false }),
       this.client.from('habit_check_ins').select('id,habit_goal_id,patient_id,recorded_on,progress,notes,difficulties,next_step,source,shared_with_patient_at,submission_key,created_at,updated_at').eq('organization_id', this.organizationId).order('recorded_on', { ascending: false }),
@@ -189,11 +195,13 @@ export class SupabaseNutritionRepository implements NutritionRepository {
         version: Number(row.current_version),
         updatedAt: String(row.updated_at),
         meals: decodeMeals(current?.meals ?? []),
+        nutritionTargets: current?.nutrition_targets && typeof current.nutrition_targets === 'object' ? structuredClone(current.nutrition_targets) : {},
         revisions: [...versions].reverse().map((version) => ({
           version: Number(version.version),
           savedAt: String(version.created_at),
           summary: String(version.change_summary ?? ''),
           meals: decodeMeals(version.meals ?? []),
+          nutritionTargets: version.nutrition_targets && typeof version.nutrition_targets === 'object' ? structuredClone(version.nutrition_targets) : {},
         })),
       }
     })
@@ -336,18 +344,20 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   }
 
   async saveMealPlan(plan: MealPlan, summary: string) {
-    const procedure = plan.version === 0 ? 'create_meal_plan_draft' : 'save_meal_plan_version'
+    const procedure = plan.version === 0 ? 'create_meal_plan_draft_v2' : 'save_meal_plan_version_v2'
     const params = plan.version === 0 ? {
       p_organization_id: this.organizationId,
       p_patient_id: plan.patientId,
       p_title: plan.title,
       p_meals: plan.meals,
+      p_nutrition_targets: plan.nutritionTargets ?? {},
       p_change_summary: summary,
     } : {
       p_meal_plan_id: plan.id,
       p_expected_version: plan.version,
       p_title: plan.title,
       p_meals: plan.meals,
+      p_nutrition_targets: plan.nutritionTargets ?? {},
       p_change_summary: summary,
     }
     const { data, error } = await this.client.rpc(procedure, params)
@@ -360,7 +370,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       id: String(result.saved_plan_id),
       version: Number(result.saved_version),
       updatedAt: String(result.saved_at),
-      revisions: [...plan.revisions, { version: Number(result.saved_version), savedAt: String(result.saved_at), summary, meals: structuredClone(plan.meals) }],
+      revisions: [...plan.revisions, { version: Number(result.saved_version), savedAt: String(result.saved_at), summary, meals: structuredClone(plan.meals), nutritionTargets: structuredClone(plan.nutritionTargets ?? {}) }],
     }
   }
 
