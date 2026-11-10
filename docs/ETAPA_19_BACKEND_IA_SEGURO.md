@@ -89,7 +89,9 @@ Variáveis previstas:
 - `ANTHROPIC_MAX_OUTPUT_TOKENS`;
 - `ANTHROPIC_TIMEOUT_MS`;
 - `ANTHROPIC_INPUT_MICROS_PER_MILLION`;
-- `ANTHROPIC_OUTPUT_MICROS_PER_MILLION`.
+- `ANTHROPIC_OUTPUT_MICROS_PER_MILLION`;
+- `ANTHROPIC_CACHE_WRITE_MICROS_PER_MILLION`;
+- `ANTHROPIC_CACHE_READ_MICROS_PER_MILLION`.
 
 Sem todas as configurações válidas, o adaptador falha de forma segura. A chave nunca deve usar prefixo `VITE_` nem ser disponibilizada ao navegador.
 

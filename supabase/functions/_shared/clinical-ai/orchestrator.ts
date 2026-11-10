@@ -20,6 +20,7 @@ export async function runAuthorizedClinicalAiOperation(dependencies: { authoriza
   if (reservation.reused) throw new Error('IDEMPOTENCY_REPLAY_BLOCKED')
   try {
     const generated = await dependencies.provider.generate(input, context, signal)
+    if (!await dependencies.authorization.authorize(principal,input)) throw new Error('CLINICAL_ACCESS_REVOKED')
     if (generated.usage.inputTokens > estimate.inputTokens || generated.usage.outputTokens > estimate.outputTokens || generated.usage.costMicros > estimate.costMicros) throw new Error('PROVIDER_USAGE_EXCEEDS_RESERVATION')
     const response = validateServerResponse(generated.response, context, input.requestId)
     await dependencies.quota.complete(reservation.operationId, principal, { status: 'success', ...generated.usage, model: dependencies.provider.model, durationMs: Math.round(performance.now() - started) })

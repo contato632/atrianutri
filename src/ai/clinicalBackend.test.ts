@@ -60,6 +60,7 @@ describe('backend seguro de Clinical Intelligence', () => {
 
   it('calcula custo exclusivamente com preços configurados no backend', () => {
     expect(estimateCostMicros(1000,500,{ inputMicrosPerMillion:3_000_000,outputMicrosPerMillion:15_000_000 })).toBe(10500)
+    expect(estimateCostMicros(100,20,{inputMicrosPerMillion:1_000_000,outputMicrosPerMillion:2_000_000,cacheWriteMicrosPerMillion:3_000_000,cacheReadMicrosPerMillion:500_000},50,25)).toBe(303)
     expect(() => estimateCostMicros(1,1,{ inputMicrosPerMillion:-1,outputMicrosPerMillion:1 })).toThrow('INVALID_COST_INPUT')
   })
 
@@ -69,7 +70,7 @@ describe('backend seguro de Clinical Intelligence', () => {
   })
 
   it('aplica timeout, cancelamento e falha de rede simulados', async () => {
-    const config=readAnthropicBackendConfig({ CLINICAL_AI_REAL_MODE:'enabled',ANTHROPIC_API_KEY:'test-only',ANTHROPIC_MODEL:'configured-at-runtime',ANTHROPIC_API_VERSION:'controlled-version',ANTHROPIC_MAX_OUTPUT_TOKENS:'100',ANTHROPIC_TIMEOUT_MS:'1000',ANTHROPIC_INPUT_MICROS_PER_MILLION:'1',ANTHROPIC_OUTPUT_MICROS_PER_MILLION:'1' })
+    const config=readAnthropicBackendConfig({ CLINICAL_AI_REAL_MODE:'enabled',ANTHROPIC_API_KEY:'test-only',ANTHROPIC_MODEL:'configured-at-runtime',ANTHROPIC_API_VERSION:'controlled-version',ANTHROPIC_MAX_OUTPUT_TOKENS:'100',ANTHROPIC_TIMEOUT_MS:'1000',ANTHROPIC_INPUT_MICROS_PER_MILLION:'1',ANTHROPIC_OUTPUT_MICROS_PER_MILLION:'1',ANTHROPIC_CACHE_WRITE_MICROS_PER_MILLION:'1',ANTHROPIC_CACHE_READ_MICROS_PER_MILLION:'1' })
     const failed=new AnthropicBackendProvider(config,async()=>{ throw new Error('SIMULATED_NETWORK_FAILURE') }); await expect(failed.generate(input(),context())).rejects.toThrow('SIMULATED_NETWORK_FAILURE')
     const controller=new AbortController(); const canceled=new AnthropicBackendProvider(config,(_request)=>new Promise((_resolve,reject)=>_request.signal.addEventListener('abort',()=>reject(new DOMException('cancel','AbortError')),{once:true}))); const promise=canceled.generate(input(),context(),controller.signal); controller.abort(); await expect(promise).rejects.toMatchObject({ name:'AbortError' })
   })
@@ -94,6 +95,11 @@ describe('backend seguro de Clinical Intelligence', () => {
     const revoked:ClinicalAuthorizationPort={ authorize:async()=>false,context:async()=>context() }; const provider={ enabled:true,model:'test',maxOutputTokens:100,estimateMaximumCost:()=>1,generate:vi.fn() } as unknown as ClinicalProviderPort; const quota={ reserve:vi.fn(),complete:vi.fn() } as unknown as ClinicalQuotaPort
     await expect(runAuthorizedClinicalAiOperation({ authorization:revoked,quota,provider },{ userId:ids.professional },input())).rejects.toThrow('CLINICAL_ACCESS_DENIED')
     const wrongOrg:ClinicalAuthorizationPort={ authorize:async()=>true,context:async()=>({ ...context(),organizationId:'88888888-8888-4888-8888-888888888888' }) }; await expect(runAuthorizedClinicalAiOperation({ authorization:wrongOrg,quota,provider },{ userId:ids.professional },input())).rejects.toThrow('CONTEXT_SCOPE_MISMATCH')
+  })
+
+  it('descarta o resultado se o vínculo for revogado durante a operação',async()=>{
+    let authorized=true; const request=input(); const ctx=context(); const authorization:ClinicalAuthorizationPort={ authorize:async()=>authorized,context:async()=>ctx }; const complete=vi.fn(); const quota:ClinicalQuotaPort={ reserve:async()=>({operationId:request.requestId,reused:false}),complete }; const provider:ClinicalProviderPort={ enabled:true,model:'test',maxOutputTokens:1000,estimateMaximumCost:()=>100,generate:async()=>{authorized=false;return {response:validResponse(request,ctx),usage:{inputTokens:10,outputTokens:10,costMicros:10}}} }
+    await expect(runAuthorizedClinicalAiOperation({authorization,quota,provider},{userId:ids.professional},request)).rejects.toThrow('CLINICAL_ACCESS_REVOKED'); expect(complete).toHaveBeenCalledWith(request.requestId,{userId:ids.professional},expect.objectContaining({status:'error',errorCode:'CLINICAL_ACCESS_REVOKED'}))
   })
 
   it('integra as quatro ferramentas sem modificar registros clínicos', async () => {
