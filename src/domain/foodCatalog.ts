@@ -11,7 +11,7 @@ const unavailable = (): NutrientDatum => ({ status: 'unavailable' })
 const notAnalyzed = (): NutrientDatum => ({ status: 'not-analyzed' })
 const source = {
   sourceId: 'atria-demo-2026', sourceName: 'Catálogo demonstrativo AtriaNutri', sourceVersion: '1.0',
-  sourceLicense: 'Conteúdo fictício criado para demonstração; não utilizar como referência científica ou clínica.', demonstrative: true,
+  sourceLicense: 'Conteúdo fictício criado para demonstração; não utilizar como referência científica ou clínica.', demonstrative: true, catalogType: 'demonstration' as const,
 } as const
 const nutrients = (energyKcal: number, proteinG: number, carbohydrateG: number, fatG: number, fiberG: NutrientDatum, sodiumMg: NutrientDatum): Record<NutrientKey, NutrientDatum> => ({
   energyKcal: known(energyKcal), proteinG: known(proteinG), carbohydrateG: known(carbohydrateG), fatG: known(fatG), fiberG, sodiumMg,

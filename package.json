@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "test:db": "supabase test db",
     "test:integration:local": "node scripts/supabase-integration-test.mjs",
+    "catalog:import:usda": "node scripts/import-usda-fooddata.mjs",
     "db:start": "supabase start",
     "db:stop": "supabase stop --no-backup",
     "db:reset": "supabase db reset",

@@ -58,8 +58,12 @@ export interface HouseholdMeasureSnapshot {
 
 export interface FoodCompositionSnapshot {
   foodName: string
+  originalName?: string
   category: string
   preparation: string
+  catalogType?: 'scientific' | 'demonstration' | 'professional'
+  sourceFoodCode?: string
+  sourcePublishedAt?: string
   sourceId: string
   sourceName: string
   sourceVersion: string

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "id": "usda-fdc",
+    "name": "USDA FoodData Central",
+    "edition": "não importada",
+    "publishedAt": null,
+    "license": "CC0-1.0",
+    "originCountry": "Estados Unidos",
+    "dataset": "Foundation Foods",
+    "downloadUrl": null,
+    "archiveSha256": null,
+    "fileChecksums": {}
+  },
+  "foods": []
+}
