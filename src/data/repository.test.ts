@@ -68,6 +68,19 @@ describe('DemoNutritionRepository', () => {
     await expect(repository.saveHabitCheckIn({ patientId: second.id, goalId: goal.id, recordedOn: '2026-11-08', progress: 'difficulty', notes: '', difficulties: '', nextStep: '', sharedWithPatient: false, professionalPrivateNote: '', submissionKey: '20000000-0000-4000-8000-000000000002' })).rejects.toThrow('não encontrada')
   })
 
+  it('grava relatos do portal com autoria do paciente e bloqueia escrita cruzada', async () => {
+    const repository = new DemoNutritionRepository(empty)
+    const first = await repository.createPatient({ fullName: 'Paciente Portal', birthDate: '1990-01-01', phone: '(11) 90000-0003', email: 'portal@demo.local', status: 'active' })
+    const second = await repository.createPatient({ fullName: 'Outro Paciente', birthDate: '1991-01-01', phone: '(11) 90000-0004', email: 'outro@demo.local', status: 'active' })
+    const diaryInput = { patientId: first.id, entryDate: '2026-11-10', mealTime: '12:00', mealType: 'lunch' as const, foods: [{ id: 'food', name: 'Refeição relatada', quantity: '' }], notes: '', eatingContext: '', hungerBefore: '', satietyAfter: '', routineChanges: '', sharedWithPatient: true, professionalPrivateNote: '', submissionKey: crypto.randomUUID() }
+    const diary = await repository.savePatientFoodDiaryEntry(first.id, diaryInput)
+    expect(diary).toEqual(expect.objectContaining({ source: 'patient', patientId: first.id, professionalPrivateNote: '' }))
+    await expect(repository.savePatientFoodDiaryEntry(second.id, diaryInput)).rejects.toThrow('não pertence')
+    const privateGoal = await repository.saveHabitGoal({ patientId: first.id, title: 'Meta privada', description: '', status: 'active', sharedWithPatient: false, professionalPrivateNote: 'privado', submissionKey: crypto.randomUUID() })
+    const checkInInput = { patientId: first.id, goalId: privateGoal.id, recordedOn: '2026-11-10', progress: 'not-observed' as const, notes: '', difficulties: '', nextStep: '', sharedWithPatient: true, professionalPrivateNote: '', submissionKey: crypto.randomUUID() }
+    await expect(repository.savePatientHabitCheckIn(first.id, checkInInput)).rejects.toThrow('não foi compartilhada')
+  })
+
   it('salva avaliação estruturada e recordatório vinculados no modo demonstração', async () => {
     const repository=new DemoNutritionRepository(empty);const patient=await repository.createPatient({fullName:'Paciente Avaliação',birthDate:'1990-01-01',phone:'(11) 90000-0010',email:'avaliacao@demo.local',status:'active'})
     const evaluation=await repository.saveNutritionEvaluation({patientId:patient.id,evaluatedOn:'2026-11-08',consultationReason:'Contexto fictício',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000010'})

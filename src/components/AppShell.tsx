@@ -85,7 +85,7 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
           </div>
         </header>
 
-        <div className="demo-banner" role="status"><Sparkles size={16} /><span>{mode === 'demo' ? <><strong>Ambiente de demonstração.</strong> Todos os dados são fictícios e as alterações desta sessão não serão persistidas.</> : <><strong>Ambiente Supabase homologado.</strong> Utilize exclusivamente contas e pacientes fictícios durante os testes.</>}</span></div>
+        <div className="demo-banner" role="status"><Sparkles size={16} /><span>{mode === 'demo' ? <><strong>Ambiente de demonstração.</strong> Todos os dados são fictícios e as alterações desta sessão não serão persistidas.</> : <><strong>Ambiente Supabase homologado.</strong> Utilize exclusivamente contas e pacientes fictícios durante os testes.</>}</span>{mode === 'demo' && <Link to="/portal" className="demo-portal-link">Abrir portal fictício</Link>}</div>
         <div className="page-container"><Outlet /></div>
       </main>
 

@@ -14,6 +14,7 @@ import { ManagementPage } from './pages/ManagementPage'
 import { SecurityPage } from './pages/SecurityPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { FinancialPage } from './pages/FinancialPage'
+import { PatientPortalPage } from './pages/PatientPortalPage'
 import { WorkspaceProvider } from './state/WorkspaceContext'
 import { DocumentPreferencesProvider } from './state/DocumentPreferencesContext'
 import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
@@ -40,6 +41,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
       <DocumentPreferencesProvider scope={preferencesScope}>
         <BrowserRouter>
           <Routes>
+            <Route path="portal/*" element={<PatientPortalPage enabled={mode === 'demo'} />} />
             <Route element={<AppShell mode={mode} identity={identity} organizationId={organizationId} onOrganizationChange={onOrganizationChange} onSignOut={onSignOut} />}>
               <Route index element={<DashboardPage />} />
               <Route path="pacientes" element={<PatientsPage />} />

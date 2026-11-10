@@ -12,8 +12,10 @@ type WorkspaceContextValue = {
   createAssessment: (input: AssessmentInput) => Promise<void>
   saveMealPlan: (plan: MealPlan, summary: string) => Promise<MealPlan>
   saveFoodDiaryEntry: (input: FoodDiaryEntryInput, entry?: FoodDiaryEntry) => Promise<FoodDiaryEntry>
+  savePatientFoodDiaryEntry: (patientId: string, input: FoodDiaryEntryInput) => Promise<FoodDiaryEntry>
   saveHabitGoal: (input: HabitGoalInput, goal?: HabitGoal) => Promise<HabitGoal>
   saveHabitCheckIn: (input: HabitCheckInInput, checkIn?: HabitCheckIn) => Promise<HabitCheckIn>
+  savePatientHabitCheckIn: (patientId: string, input: HabitCheckInInput) => Promise<HabitCheckIn>
   saveNutritionEvaluation: (input: NutritionEvaluationInput, evaluation?: NutritionEvaluation) => Promise<NutritionEvaluation>
   saveDietaryRecall24h: (input: DietaryRecall24hInput, recall?: DietaryRecall24h) => Promise<DietaryRecall24h>
   saveProfessionalService:(input:ProfessionalServiceInput,service?:ProfessionalService)=>Promise<ProfessionalService>
@@ -82,6 +84,11 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
       await refresh()
       return saved
     },
+    async savePatientFoodDiaryEntry(patientId, input) {
+      const saved = await repository.savePatientFoodDiaryEntry(patientId, input)
+      await refresh()
+      return saved
+    },
     async saveHabitGoal(input, goal) {
       const saved = await repository.saveHabitGoal(input, goal?.id, goal?.updatedAt)
       await refresh()
@@ -89,6 +96,11 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     },
     async saveHabitCheckIn(input, checkIn) {
       const saved = await repository.saveHabitCheckIn(input, checkIn?.id, checkIn?.updatedAt)
+      await refresh()
+      return saved
+    },
+    async savePatientHabitCheckIn(patientId, input) {
+      const saved = await repository.savePatientHabitCheckIn(patientId, input)
       await refresh()
       return saved
     },

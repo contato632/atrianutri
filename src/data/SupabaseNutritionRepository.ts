@@ -387,6 +387,10 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     return { ...structuredClone(input), id: String(confirmation.saved_id), source: 'professional' as const, createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
   }
 
+  async savePatientFoodDiaryEntry(_patientId: string, _input: FoodDiaryEntryInput): Promise<FoodDiaryEntry> {
+    throw new Error('O portal com dados reais permanece bloqueado até a homologação das políticas de paciente.')
+  }
+
   async saveHabitGoal(input: HabitGoalInput, goalId?: string, expectedUpdatedAt?: string) {
     const { data, error } = await this.client.rpc('save_habit_goal', {
       p_organization_id: this.organizationId, p_patient_id: input.patientId, p_title: input.title, p_description: input.description,
@@ -408,6 +412,10 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const confirmation = requireData(Array.isArray(data) ? data[0] : data, error, 'O acompanhamento de hábito não foi confirmado pelo servidor.')
     if (!confirmation?.saved_id || !confirmation.saved_updated_at) throw new Error('O servidor não confirmou o acompanhamento de hábito.')
     return { ...structuredClone(input), id: String(confirmation.saved_id), source: 'professional' as const, createdAt: expectedUpdatedAt ? '' : String(confirmation.saved_updated_at), updatedAt: String(confirmation.saved_updated_at) }
+  }
+
+  async savePatientHabitCheckIn(_patientId: string, _input: HabitCheckInInput): Promise<HabitCheckIn> {
+    throw new Error('O portal com dados reais permanece bloqueado até a homologação das políticas de paciente.')
   }
 
   async saveNutritionEvaluation(input: NutritionEvaluationInput, evaluationId?: string, expectedUpdatedAt?: string) {

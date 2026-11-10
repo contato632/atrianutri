@@ -12,8 +12,10 @@ export interface NutritionRepository {
   createAssessment(input: AssessmentInput): Promise<Assessment>
   saveMealPlan(plan: MealPlan, summary: string): Promise<MealPlan>
   saveFoodDiaryEntry(input: FoodDiaryEntryInput, entryId?: string, expectedUpdatedAt?: string): Promise<FoodDiaryEntry>
+  savePatientFoodDiaryEntry(patientId: string, input: FoodDiaryEntryInput): Promise<FoodDiaryEntry>
   saveHabitGoal(input: HabitGoalInput, goalId?: string, expectedUpdatedAt?: string): Promise<HabitGoal>
   saveHabitCheckIn(input: HabitCheckInInput, checkInId?: string, expectedUpdatedAt?: string): Promise<HabitCheckIn>
+  savePatientHabitCheckIn(patientId: string, input: HabitCheckInInput): Promise<HabitCheckIn>
   saveNutritionEvaluation(input: NutritionEvaluationInput, evaluationId?: string, expectedUpdatedAt?: string): Promise<NutritionEvaluation>
   saveDietaryRecall24h(input: DietaryRecall24hInput, recallId?: string, expectedUpdatedAt?: string): Promise<DietaryRecall24h>
   saveProfessionalService(input: ProfessionalServiceInput, serviceId?: string): Promise<ProfessionalService>
@@ -109,6 +111,14 @@ export class DemoNutritionRepository implements NutritionRepository {
     return clone(saved)
   }
 
+  async savePatientFoodDiaryEntry(patientId: string, input: FoodDiaryEntryInput) {
+    if (input.patientId !== patientId || !this.data.patients.some((patient) => patient.id === patientId)) throw new Error('O registro não pertence ao paciente autenticado.')
+    const timestamp = new Date().toISOString()
+    const saved: FoodDiaryEntry = { ...clone(input), patientId, id: id('diary'), source: 'patient', sharedWithPatient: true, professionalPrivateNote: '', createdAt: timestamp, updatedAt: timestamp }
+    this.data.foodDiaryEntries.unshift(saved)
+    return clone(saved)
+  }
+
   async saveHabitGoal(input: HabitGoalInput, goalId?: string, expectedUpdatedAt?: string) {
     if (!this.data.patients.some((patient) => patient.id === input.patientId)) throw new Error('Paciente não encontrado.')
     const index = goalId ? this.data.habitGoals.findIndex((goal) => goal.id === goalId) : -1
@@ -133,6 +143,15 @@ export class DemoNutritionRepository implements NutritionRepository {
     const saved: HabitCheckIn = { ...clone(input), id: previous?.id ?? id('checkin'), source: 'professional', createdAt: previous?.createdAt ?? timestamp, updatedAt: timestamp }
     if (index >= 0) this.data.habitCheckIns[index] = saved
     else this.data.habitCheckIns.unshift(saved)
+    return clone(saved)
+  }
+
+  async savePatientHabitCheckIn(patientId: string, input: HabitCheckInInput) {
+    const goal = this.data.habitGoals.find((item) => item.id === input.goalId && item.patientId === patientId && item.sharedWithPatient)
+    if (input.patientId !== patientId || !goal) throw new Error('A meta não pertence ao paciente autenticado ou não foi compartilhada.')
+    const timestamp = new Date().toISOString()
+    const saved: HabitCheckIn = { ...clone(input), patientId, id: id('checkin'), source: 'patient', sharedWithPatient: true, professionalPrivateNote: '', createdAt: timestamp, updatedAt: timestamp }
+    this.data.habitCheckIns.unshift(saved)
     return clone(saved)
   }
 

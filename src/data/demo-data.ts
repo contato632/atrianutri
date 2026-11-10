@@ -11,7 +11,7 @@ export const demoWorkspace: NutritionWorkspace = {
       phone: '(11) 98888-1020',
       email: 'ana.exemplo@demo.local',
       status: 'active',
-      nextAppointment: '2026-11-09T12:30:00.000Z',
+      nextAppointment: '2026-11-12T15:30:00.000Z',
       createdAt: '2026-07-03T10:00:00.000Z',
     },
     {
@@ -62,7 +62,7 @@ export const demoWorkspace: NutritionWorkspace = {
       id: 'plan-ana',
       patientId: 'demo-patient-ana',
       title: 'Plano de organização semanal',
-      status: 'draft',
+      status: 'active',
       version: 2,
       updatedAt: DEMO_NOW,
       meals: [
@@ -112,7 +112,7 @@ export const demoWorkspace: NutritionWorkspace = {
     {id:'service-followup',name:'Retorno nutricional',defaultDurationMinutes:40,priceCents:15000,active:true,createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
   ],
   appointments: [
-    {id:'appointment-ana',patientId:'demo-patient-ana',serviceId:'service-followup',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'follow-up',status:'confirmed',title:'Retorno nutricional',privateTitle:'',administrativeNote:'Confirmado por telefone no cenário fictício.',startsAt:'2026-11-09T15:30:00.000Z',endsAt:'2026-11-09T16:10:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
+    {id:'appointment-ana',patientId:'demo-patient-ana',serviceId:'service-followup',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'follow-up',status:'confirmed',title:'Retorno nutricional',privateTitle:'',administrativeNote:'Confirmado por telefone no cenário fictício.',startsAt:'2026-11-12T15:30:00.000Z',endsAt:'2026-11-12T16:10:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
     {id:'appointment-lunch-1',seriesId:'series-lunch',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'lunch-break',status:'scheduled',title:'Horário de almoço',privateTitle:'',administrativeNote:'',startsAt:'2026-11-09T15:00:00.000Z',endsAt:'2026-11-09T15:30:00.000Z',recurrenceFrequency:'weekly',recurrenceEndsOn:'2026-12-31',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
     {id:'appointment-rafael',patientId:'demo-patient-rafael',serviceId:'service-initial',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'nutrition-consultation',status:'scheduled',title:'Consulta nutricional',privateTitle:'',administrativeNote:'',startsAt:'2026-11-10T18:00:00.000Z',endsAt:'2026-11-10T19:00:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
     {id:'appointment-personal',professionalId:'demo-professional-marina',professionalLabel:'Dra. Marina',category:'personal',status:'scheduled',title:'Compromisso particular',privateTitle:'Assunto pessoal fictício',administrativeNote:'',startsAt:'2026-11-11T19:00:00.000Z',endsAt:'2026-11-11T20:00:00.000Z',recurrenceFrequency:'none',createdAt:DEMO_NOW,updatedAt:DEMO_NOW},
