@@ -62,7 +62,7 @@ export const demoWorkspace: NutritionWorkspace = {
       id: 'plan-ana',
       patientId: 'demo-patient-ana',
       title: 'Plano de organização semanal',
-      status: 'active',
+      status: 'draft',
       version: 2,
       updatedAt: DEMO_NOW,
       meals: [
@@ -132,5 +132,12 @@ export const demoWorkspace: NutritionWorkspace = {
   financialExpenses: [
     {id:'expense-software',categoryId:'expense-cat-software',description:'Software administrativo fictício',amountCents:8900,competenceDate:'2026-11-01',dueDate:'2026-11-05',paidAt:'2026-11-05',status:'paid',administrativeNote:'Ambiente demonstrativo.',createdAt:'2026-11-01T10:00:00.000Z',updatedAt:'2026-11-05T10:00:00.000Z'},
     {id:'expense-materials',categoryId:'expense-cat-materials',description:'Materiais de consultório fictícios',amountCents:6500,competenceDate:'2026-11-01',dueDate:'2026-11-15',status:'planned',administrativeNote:'',createdAt:'2026-11-02T10:00:00.000Z',updatedAt:'2026-11-02T10:00:00.000Z'},
+  ],
+  patientInvitations: [],
+  patientLinks: [
+    { id: 'link-ana', organizationId: 'demo-organization', patientId: 'demo-patient-ana', professionalId: 'demo-professional-marina', professionalName: 'Dra. Marina Costa', patientUserId: 'demo-user-ana', status: 'active', activatedAt: '2026-10-20T14:00:00.000Z', createdAt: '2026-10-20T14:00:00.000Z' },
+  ],
+  mealPlanPublications: [
+    { id: 'publication-ana-v2', organizationId: 'demo-organization', patientId: 'demo-patient-ana', mealPlanId: 'plan-ana', version: 2, professionalId: 'demo-professional-marina', status: 'active', publishedAt: '2026-11-08T13:00:00.000Z' },
   ],
 }

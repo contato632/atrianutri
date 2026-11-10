@@ -1,5 +1,5 @@
 import { calculateBmi } from '../domain/nutrition'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { hasAppointmentConflict, occurrenceInstants } from '../domain/scheduling'
 import { assertMoneyCents, chargeBalanceCents, netReceivedCents } from '../domain/financial'
 import { demoWorkspace } from './demo-data'
@@ -27,6 +27,11 @@ export interface NutritionRepository {
   reverseFinancialPayment(paymentId: string, idempotencyKey: string, note: string): Promise<FinancialPayment>
   saveFinancialExpense(input: FinancialExpenseInput, expenseId?: string, expectedUpdatedAt?: string): Promise<FinancialExpense>
   saveExpenseCategory(name: string, categoryId?: string): Promise<{id:string;name:string;active:boolean}>
+  createPatientInvitation(patientId: string): Promise<PatientInvitation>
+  cancelPatientInvitation(invitationId: string): Promise<void>
+  endPatientLink(linkId: string): Promise<void>
+  publishMealPlanVersion(mealPlanId: string, version: number): Promise<MealPlanPublication>
+  revokeMealPlanPublication(publicationId: string): Promise<void>
 }
 
 const clone = <T,>(value: T): T => structuredClone(value)
@@ -41,6 +46,48 @@ export class DemoNutritionRepository implements NutritionRepository {
 
   async snapshot() {
     return clone(this.data)
+  }
+
+  async createPatientInvitation(patientId: string) {
+    const patient = this.data.patients.find((item) => item.id === patientId)
+    if (!patient) throw new Error('Paciente não encontrado.')
+    const invitations = this.data.patientInvitations ??= []
+    if (invitations.some((item) => item.patientId === patientId && item.status === 'pending' && new Date(item.expiresAt).getTime() > Date.now())) throw new Error('Já existe um convite pendente para este paciente.')
+    const createdAt = new Date().toISOString()
+    const invitation: PatientInvitation = { id: id('invitation'), organizationId: 'demo-organization', patientId, professionalId: 'demo-professional-marina', email: patient.email, status: 'pending', createdAt, expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() }
+    invitations.unshift(invitation)
+    return clone(invitation)
+  }
+
+  async cancelPatientInvitation(invitationId: string) {
+    const invitation = (this.data.patientInvitations ?? []).find((item) => item.id === invitationId)
+    if (!invitation || invitation.status !== 'pending') throw new Error('Convite pendente não encontrado.')
+    invitation.status = 'canceled'; invitation.canceledAt = new Date().toISOString()
+  }
+
+  async endPatientLink(linkId: string) {
+    const link = (this.data.patientLinks ?? []).find((item) => item.id === linkId)
+    if (!link || link.status !== 'active') throw new Error('Vínculo ativo não encontrado.')
+    link.status = 'ended'; link.endedAt = new Date().toISOString()
+    for (const publication of this.data.mealPlanPublications ?? []) if (publication.patientId === link.patientId && publication.status === 'active') { publication.status = 'revoked'; publication.revokedAt = link.endedAt }
+  }
+
+  async publishMealPlanVersion(mealPlanId: string, version: number) {
+    const plan = this.data.mealPlans.find((item) => item.id === mealPlanId)
+    if (!plan || !plan.revisions.some((item) => item.version === version)) throw new Error('Versão do plano não encontrada.')
+    if (!(this.data.patientLinks ?? []).some((item) => item.patientId === plan.patientId && item.status === 'active')) throw new Error('O paciente precisa de vínculo ativo antes da publicação.')
+    const publications = this.data.mealPlanPublications ??= []
+    const timestamp = new Date().toISOString()
+    for (const item of publications) if (item.patientId === plan.patientId && item.status === 'active') { item.status = 'revoked'; item.revokedAt = timestamp }
+    const publication: MealPlanPublication = { id: id('publication'), organizationId: 'demo-organization', patientId: plan.patientId, mealPlanId, version, professionalId: 'demo-professional-marina', status: 'active', publishedAt: timestamp }
+    publications.unshift(publication)
+    return clone(publication)
+  }
+
+  async revokeMealPlanPublication(publicationId: string) {
+    const publication = (this.data.mealPlanPublications ?? []).find((item) => item.id === publicationId)
+    if (!publication || publication.status !== 'active') throw new Error('Publicação ativa não encontrada.')
+    publication.status = 'revoked'; publication.revokedAt = new Date().toISOString()
   }
 
   async createPatient(input: PatientInput) {

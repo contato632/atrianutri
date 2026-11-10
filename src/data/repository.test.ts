@@ -44,6 +44,26 @@ describe('DemoNutritionRepository', () => {
     expect(second.revisions[0].nutritionTargets).toEqual({ energyKcal: 2000 })
   })
 
+  it('controla convite, vínculo e publicação sem alterar a versão publicada', async () => {
+    const seed = structuredClone(empty)
+    seed.patients.push({ id: 'patient-link', fullName: 'Paciente Vínculo', birthDate: '1990-01-01', phone: '(11) 90000-1000', email: 'vinculo@demo.local', status: 'active', createdAt: '' })
+    seed.patientLinks = [{ id: 'link', organizationId: 'demo-organization', patientId: 'patient-link', professionalId: 'demo-professional-marina', professionalName: 'Dra. Marina', status: 'active', activatedAt: '2026-11-10T10:00:00Z', createdAt: '2026-11-10T10:00:00Z' }]
+    seed.mealPlans.push({ id: 'plan-link', patientId: 'patient-link', title: 'Plano', status: 'draft', version: 2, updatedAt: '', meals: [], revisions: [{ version: 1, savedAt: '2026-11-09T10:00:00Z', summary: 'Primeira', meals: [{ id: 'meal-1', name: 'Versão 1', time: '08:00', guidance: '', foods: [] }] }, { version: 2, savedAt: '2026-11-10T10:00:00Z', summary: 'Segunda', meals: [{ id: 'meal-2', name: 'Versão 2', time: '09:00', guidance: '', foods: [] }] }] })
+    const repository = new DemoNutritionRepository(seed)
+    const invitation = await repository.createPatientInvitation('patient-link')
+    await expect(repository.createPatientInvitation('patient-link')).rejects.toThrow('pendente')
+    await repository.cancelPatientInvitation(invitation.id)
+    const replacement = await repository.createPatientInvitation('patient-link')
+    expect(replacement.id).not.toBe(invitation.id)
+    const first = await repository.publishMealPlanVersion('plan-link', 1)
+    const second = await repository.publishMealPlanVersion('plan-link', 2)
+    const snapshot = await repository.snapshot()
+    expect(snapshot.mealPlanPublications?.find((item) => item.id === first.id)?.status).toBe('revoked')
+    expect(snapshot.mealPlanPublications?.find((item) => item.id === second.id)?.status).toBe('active')
+    await repository.endPatientLink('link')
+    expect((await repository.snapshot()).mealPlanPublications?.find((item) => item.id === second.id)?.status).toBe('revoked')
+  })
+
   it('cria e edita diário, meta e acompanhamento sem perder o vínculo do paciente', async () => {
     const repository = new DemoNutritionRepository(empty)
     const patient = await repository.createPatient({ fullName: 'Paciente Diário', birthDate: '1992-03-02', phone: '(11) 90000-0000', email: 'diario@demo.local', status: 'active' })

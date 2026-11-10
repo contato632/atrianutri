@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -27,6 +27,11 @@ type WorkspaceContextValue = {
   reverseFinancialPayment:(payment:FinancialPayment,note:string)=>Promise<FinancialPayment>
   saveFinancialExpense:(input:FinancialExpenseInput,expense?:FinancialExpense)=>Promise<FinancialExpense>
   saveExpenseCategory:(name:string)=>Promise<{id:string;name:string;active:boolean}>
+  createPatientInvitation:(patientId:string)=>Promise<PatientInvitation>
+  cancelPatientInvitation:(invitationId:string)=>Promise<void>
+  endPatientLink:(linkId:string)=>Promise<void>
+  publishMealPlanVersion:(mealPlanId:string,version:number)=>Promise<MealPlanPublication>
+  revokeMealPlanPublication:(publicationId:string)=>Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -121,6 +126,11 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     async reverseFinancialPayment(payment,note){const saved=await repository.reverseFinancialPayment(payment.id,crypto.randomUUID(),note);await refresh();return saved},
     async saveFinancialExpense(input,expense){const saved=await repository.saveFinancialExpense(input,expense?.id,expense?.updatedAt);await refresh();return saved},
     async saveExpenseCategory(name){const saved=await repository.saveExpenseCategory(name);await refresh();return saved},
+    async createPatientInvitation(patientId){const saved=await repository.createPatientInvitation(patientId);await refresh();return saved},
+    async cancelPatientInvitation(invitationId){await repository.cancelPatientInvitation(invitationId);await refresh()},
+    async endPatientLink(linkId){await repository.endPatientLink(linkId);await refresh()},
+    async publishMealPlanVersion(mealPlanId,version){const saved=await repository.publishMealPlanVersion(mealPlanId,version);await refresh();return saved},
+    async revokeMealPlanPublication(publicationId){await repository.revokeMealPlanPublication(publicationId);await refresh()},
   }), [workspace, loading, error, repository])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

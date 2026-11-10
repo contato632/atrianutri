@@ -12,6 +12,7 @@ describe('portal do paciente', () => {
     const snapshot = patientPortalSnapshot(demoWorkspace, 'demo-patient-ana')
     expect(snapshot.patient.fullName).toBe('Ana Beatriz Lima')
     expect(snapshot.plan?.status).toBe('active')
+    expect(snapshot.plan?.version).toBe(2)
     expect(snapshot.diaryEntries.every((item) => item.patientId === snapshot.patient.id)).toBe(true)
     expect(snapshot.goals.every((item) => item.patientId === snapshot.patient.id && !('professionalPrivateNote' in item))).toBe(true)
     expect(snapshot.checkIns.every((item) => !('professionalPrivateNote' in item))).toBe(true)

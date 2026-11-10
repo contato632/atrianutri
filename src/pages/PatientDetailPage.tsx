@@ -8,6 +8,7 @@ import { FoodDiaryPanel } from '../components/FoodDiaryPanel'
 import { NutritionEvaluationPanel } from '../components/NutritionEvaluationPanel'
 import { PatientForm } from '../components/PatientForm'
 import { PatientFinancePanel } from '../components/PatientFinancePanel'
+import { PatientConnectionPanel } from '../components/PatientConnectionPanel'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
@@ -25,6 +26,7 @@ export function PatientDetailPage() {
   const assessments = workspace.assessments.filter((item) => item.patientId === patient.id).sort((a, b) => b.assessedAt.localeCompare(a.assessedAt))
   const latest = assessments[0]
   const plan = workspace.mealPlans.find((item) => item.patientId === patient.id)
+  const planPublication = (workspace.mealPlanPublications ?? []).find((item) => item.patientId === patient.id && item.status === 'active')
   const bmi = latest ? interpretAdultBmi(latest.bmi) : null
 
   return (
@@ -61,10 +63,12 @@ export function PatientDetailPage() {
 
         <section className="panel detail-card">
           <header><span className="detail-icon"><Utensils size={17} /></span><div><span className="eyebrow">Planejamento</span><h3>Plano alimentar</h3></div></header>
-          {plan ? <div className="plan-summary"><span className="status status--follow-up"><i />Versão {plan.version} · Rascunho</span><strong>{plan.title}</strong><p>{plan.meals.length} refeições organizadas · Atualizado {formatDate(plan.updatedAt)}</p></div> : <p className="muted-copy">Nenhum plano iniciado para este paciente.</p>}
+          {plan ? <div className="plan-summary"><span className="status status--follow-up"><i />{planPublication ? `Versão ${planPublication.version} · Disponibilizada` : `Versão ${plan.version} · Rascunho`}</span><strong>{plan.title}</strong><p>{plan.meals.length} refeições organizadas · Atualizado {formatDate(plan.updatedAt)}</p></div> : <p className="muted-copy">Nenhum plano iniciado para este paciente.</p>}
           <Link className="text-button detail-link" to="/planos"><Utensils size={15} /> {plan ? 'Abrir plano' : 'Criar plano manual'}</Link>
         </section>
       </div>
+
+      <PatientConnectionPanel patientId={patient.id} />
 
       <NutritionEvaluationPanel patientId={patient.id} />
       <FoodDiaryPanel patientId={patient.id} />

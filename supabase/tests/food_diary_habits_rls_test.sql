@@ -30,6 +30,9 @@ insert into public.patients_administrative (id, organization_id, auth_user_id, f
 insert into public.patient_professional_assignments (organization_id, patient_id, professional_user_id, assigned_by) values
   ('3a000000-0000-4000-8000-000000000001', '3a100000-0000-4000-8000-000000000001', '31000000-0000-4000-8000-000000000001', '31000000-0000-4000-8000-000000000001'),
   ('3b000000-0000-4000-8000-000000000001', '3b100000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000001', '32000000-0000-4000-8000-000000000001');
+insert into public.patient_portal_links (organization_id,patient_id,patient_user_id,responsible_professional_user_id,status,activated_at) values
+  ('3a000000-0000-4000-8000-000000000001','3a100000-0000-4000-8000-000000000001','31000000-0000-4000-8000-000000000003','31000000-0000-4000-8000-000000000001','active',now()),
+  ('3b000000-0000-4000-8000-000000000001','3b100000-0000-4000-8000-000000000001','32000000-0000-4000-8000-000000000002','32000000-0000-4000-8000-000000000001','active',now());
 
 insert into public.food_diary_entries (id,organization_id,patient_id,entry_date,meal_time,meal_type,foods,source,author_user_id,responsible_professional_user_id,shared_with_patient_at,submission_key) values
   ('3d100000-0000-4000-8000-000000000001','3a000000-0000-4000-8000-000000000001','3a100000-0000-4000-8000-000000000001',current_date,'08:00','breakfast','[{"name":"Refeição compartilhada fictícia"}]','professional','31000000-0000-4000-8000-000000000001','31000000-0000-4000-8000-000000000001',now(),'3d110000-0000-4000-8000-000000000001'),

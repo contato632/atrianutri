@@ -34,6 +34,8 @@ import type {
   PatientStatus,
   ProfessionalService,
   ProfessionalServiceInput,
+  PatientInvitation,
+  MealPlanPublication,
 } from '../domain/models'
 import type { NutritionRepository } from './repository'
 
@@ -107,6 +109,12 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     if (error || !data.user) throw new Error('Sua identidade não pôde ser confirmada. Entre novamente.')
     return data.user.id
   }
+
+  async createPatientInvitation(_patientId: string): Promise<PatientInvitation> { throw new Error('Convites reais permanecem bloqueados até a homologação da migration da Etapa 16.') }
+  async cancelPatientInvitation(_invitationId: string): Promise<void> { throw new Error('Convites reais permanecem bloqueados até a homologação da migration da Etapa 16.') }
+  async endPatientLink(_linkId: string): Promise<void> { throw new Error('Vínculos reais permanecem bloqueados até a homologação da migration da Etapa 16.') }
+  async publishMealPlanVersion(_mealPlanId: string, _version: number): Promise<MealPlanPublication> { throw new Error('Publicações reais permanecem bloqueadas até a homologação da migration da Etapa 16.') }
+  async revokeMealPlanPublication(_publicationId: string): Promise<void> { throw new Error('Publicações reais permanecem bloqueadas até a homologação da migration da Etapa 16.') }
 
   async snapshot(): Promise<NutritionWorkspace> {
     const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult, serviceResult, appointmentResult, seriesResult, appointmentPrivateResult, chargeResult, paymentResult, expenseCategoryResult, expenseResult] = await Promise.all([

@@ -121,6 +121,46 @@ export interface MealPlan {
   revisions: PlanRevision[]
 }
 
+export type PatientInvitationStatus = 'pending' | 'accepted' | 'expired' | 'canceled'
+export interface PatientInvitation {
+  id: string
+  organizationId: string
+  patientId: string
+  professionalId: string
+  email: string
+  status: PatientInvitationStatus
+  expiresAt: string
+  createdAt: string
+  acceptedAt?: string
+  canceledAt?: string
+}
+
+export type PatientLinkStatus = 'pending' | 'active' | 'ended'
+export interface PatientProfessionalLink {
+  id: string
+  organizationId: string
+  patientId: string
+  professionalId: string
+  professionalName: string
+  patientUserId?: string
+  status: PatientLinkStatus
+  activatedAt?: string
+  endedAt?: string
+  createdAt: string
+}
+
+export interface MealPlanPublication {
+  id: string
+  organizationId: string
+  patientId: string
+  mealPlanId: string
+  version: number
+  professionalId: string
+  status: 'active' | 'revoked'
+  publishedAt: string
+  revokedAt?: string
+}
+
 export type FoodDiaryMealType = 'breakfast' | 'morning-snack' | 'lunch' | 'afternoon-snack' | 'dinner' | 'evening-snack' | 'other'
 export type ClinicalRecordSource = 'patient' | 'professional'
 
@@ -335,6 +375,9 @@ export interface NutritionWorkspace {
   financialPayments: FinancialPayment[]
   expenseCategories: ExpenseCategory[]
   financialExpenses: FinancialExpense[]
+  patientInvitations?: PatientInvitation[]
+  patientLinks?: PatientProfessionalLink[]
+  mealPlanPublications?: MealPlanPublication[]
 }
 
 export type PatientInput = Omit<PatientAdministrative, 'id' | 'createdAt'>
