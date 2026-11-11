@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FileText, FlaskConical, Home, LogOut, Menu, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
+import { BarChart3, BrainCircuit, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, FileText, FlaskConical, Home, LogOut, Menu, ShieldCheck, Sparkles, Users, Utensils, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
@@ -12,6 +12,7 @@ const primaryNavigation = [
   { to: '/avaliacoes', label: 'Avaliações', icon: ClipboardList },
   { to: '/planos', label: 'Planos alimentares', icon: Utensils },
   { to: '/documentos', label: 'Documentos', icon: FileText },
+  { to: '/intelligence', label: 'Intelligence', icon: BrainCircuit },
   { to: '/gestao', label: 'Gestão', icon: BarChart3 },
 ]
 
@@ -24,6 +25,7 @@ const pageMeta: Record<string, { title: string; eyebrow: string }> = {
   '/agenda': { title: 'Agenda', eyebrow: 'Organização profissional' },
   '/financeiro': { title: 'Financeiro', eyebrow: 'Gestão administrativa' },
   '/documentos': { title: 'Documentos', eyebrow: 'Relatórios profissionais' },
+  '/intelligence': { title: 'Intelligence Nutricional', eyebrow: 'Acompanhamento longitudinal' },
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {

@@ -15,6 +15,8 @@ import { SecurityPage } from './pages/SecurityPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { FinancialPage } from './pages/FinancialPage'
 import { PatientPortalPage } from './pages/PatientPortalPage'
+import { NutritionIntelligencePage } from './pages/NutritionIntelligencePage'
+import { IntelligenceHomologationPage } from './pages/IntelligenceHomologationPage'
 import { WorkspaceProvider } from './state/WorkspaceContext'
 import { DocumentPreferencesProvider } from './state/DocumentPreferencesContext'
 import { SupabaseNutritionRepository } from './data/SupabaseNutritionRepository'
@@ -35,6 +37,7 @@ type WorkspaceRoutesProps = {
 function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, onOrganizationChange, onSignOut }: WorkspaceRoutesProps) {
   const membership = identity?.memberships.find((item) => item.organizationId === organizationId) ?? identity?.memberships[0]
   const documentsAuthorized = mode === 'demo' || Boolean(membership?.clinicalAccess && membership.role !== 'reception')
+  const intelligenceAuthorized = mode === 'demo' || Boolean(membership?.clinicalAccess && membership.role !== 'reception')
   const preferencesScope = { organizationId: organizationId || 'demo-organization', professionalId: identity?.userId || 'demo-professional' }
   return (
     <WorkspaceProvider repository={repository}>
@@ -52,6 +55,8 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
               <Route path="agenda" element={<AgendaPage />} />
               <Route path="financeiro" element={<FinancialPage />} />
               <Route path="documentos" element={<Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense>} />
+              <Route path="intelligence" element={intelligenceAuthorized ? <NutritionIntelligencePage /> : <Navigate to="/" replace />} />
+              <Route path="intelligence/homologacao" element={mode === 'demo' && intelligenceAuthorized ? <IntelligenceHomologationPage /> : <Navigate to="/" replace />} />
               {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
