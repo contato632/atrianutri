@@ -7,12 +7,12 @@ import { useDocumentPreferences } from '../state/DocumentPreferencesContext'
 import { ProfessionalDocumentSettings } from '../components/ProfessionalDocumentSettings'
 
 export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
-  const { workspace, loading } = useWorkspace()
+  const { workspace, loading, selectedPatientId, selectPatient } = useWorkspace()
   const preferences = useDocumentPreferences()
   const firstPatient = workspace.nutritionEvaluations[0]?.patientId ?? workspace.assessments[0]?.patientId ?? workspace.patients[0]?.id ?? ''
   const [type, setType] = useState<NutritionDocumentType>('evaluation')
-  const [patientId, setPatientId] = useState(firstPatient)
-  const [options, setOptions] = useState<NutritionDocumentOptions>(() => defaultDocumentOptions('evaluation', firstPatient))
+  const [patientId, setPatientId] = useState(selectedPatientId || firstPatient)
+  const [options, setOptions] = useState<NutritionDocumentOptions>(() => defaultDocumentOptions('evaluation', selectedPatientId || firstPatient))
   const [preview, setPreview] = useState<{ url: string; fileName: string; key: string } | null>(null)
   const [error, setError] = useState('')
   const optionsKey = JSON.stringify(options)
@@ -20,6 +20,7 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
   useEffect(() => {
     if (!patientId && firstPatient) { setPatientId(firstPatient); setOptions((current) => ({ ...current, patientId: firstPatient })) }
   }, [firstPatient, patientId])
+  useEffect(() => { if (selectedPatientId && selectedPatientId !== patientId) changePatient(selectedPatientId) }, [selectedPatientId])
 
   useEffect(() => {
     if (!preferences.loading) setOptions((current) => ({ ...current, branding: structuredClone(preferences.branding) }))
@@ -51,6 +52,7 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
     const patientEvaluations = workspace.nutritionEvaluations.filter((item) => item.patientId === nextPatient).sort((a, b) => b.evaluatedOn.localeCompare(a.evaluatedOn))
     const patientPlans = workspace.mealPlans.filter((item) => item.patientId === nextPatient)
     setPatientId(nextPatient)
+    selectPatient(nextPatient)
     setOptions((current) => ({ ...current, patientId: nextPatient, evaluationId: patientEvaluations[0]?.id, planId: patientPlans[0]?.id, planVersion: patientPlans[0]?.version }))
     setError('')
   }

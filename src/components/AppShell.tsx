@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Brand } from './Brand'
 import type { ProfessionalIdentity } from '../auth/types'
 import { formatLongDateInBahia } from '../lib/format'
+import { PatientJourneyBar } from './PatientJourneyBar'
 
 const primaryNavigation = [
   { to: '/', label: 'Início', icon: Home },
@@ -88,7 +89,7 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
         </header>
 
         <div className="demo-banner" role="status"><Sparkles size={16} /><span>{mode === 'demo' ? <><strong>Ambiente de demonstração.</strong> Todos os dados são fictícios e as alterações desta sessão não serão persistidas.</> : <><strong>Ambiente Supabase homologado.</strong> Utilize exclusivamente contas e pacientes fictícios durante os testes.</>}</span>{mode === 'demo' && <Link to="/portal" className="demo-portal-link">Abrir portal fictício</Link>}</div>
-        <div className="page-container"><Outlet /></div>
+        <div className="page-container"><PatientJourneyBar /><Outlet /></div>
       </main>
 
       <nav className="mobile-tabs" aria-label="Navegação mobile">

@@ -40,7 +40,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
   const intelligenceAuthorized = mode === 'demo' || Boolean(membership?.clinicalAccess && membership.role !== 'reception')
   const preferencesScope = { organizationId: organizationId || 'demo-organization', professionalId: identity?.userId || 'demo-professional' }
   return (
-    <WorkspaceProvider repository={repository}>
+    <WorkspaceProvider repository={repository} selectionScope={organizationId || 'demo-organization'}>
       <DocumentPreferencesProvider scope={preferencesScope}>
         <BrowserRouter>
           <Routes>

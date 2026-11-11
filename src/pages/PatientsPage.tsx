@@ -1,4 +1,4 @@
-import { ChevronRight, Mail, Plus, Search, SlidersHorizontal, UserRoundSearch } from 'lucide-react'
+import { ChevronRight, Mail, Plus, Search, SlidersHorizontal, UserRoundSearch, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
@@ -14,6 +14,7 @@ export function PatientsPage() {
   const { workspace, loading, createPatient, updatePatient } = useWorkspace()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
+  const [order, setOrder] = useState<'recent' | 'alphabetical' | 'appointment'>('recent')
   const [editing, setEditing] = useState<PatientAdministrative | null | 'new'>(null)
   const navigate = useNavigate()
 
@@ -21,7 +22,11 @@ export function PatientsPage() {
     const normalized = query.trim().toLocaleLowerCase('pt-BR')
     const matchesQuery = !normalized || [patient.fullName, patient.email, patient.phone].some((value) => value.toLocaleLowerCase('pt-BR').includes(normalized))
     return matchesQuery && (status === 'all' || patient.status === status)
-  }), [workspace.patients, query, status])
+  }).sort((left, right) => order === 'alphabetical'
+    ? left.fullName.localeCompare(right.fullName, 'pt-BR')
+    : order === 'appointment'
+      ? (left.nextAppointment || '9999').localeCompare(right.nextAppointment || '9999')
+      : right.createdAt.localeCompare(left.createdAt)), [workspace.patients, query, status, order])
 
   if (loading) return <LoadingState lines={7} />
 
@@ -33,6 +38,8 @@ export function PatientsPage() {
         <header className="patient-toolbar">
           <label className="search-field"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome, e-mail ou telefone" aria-label="Buscar pacientes" />{query && <button type="button" onClick={() => setQuery('')}>Limpar</button>}</label>
           <label className="select-field"><SlidersHorizontal size={17} /><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filtrar por status"><option value="all">Todos os status</option><option value="active">Em acompanhamento</option><option value="follow-up">Retorno</option><option value="paused">Pausados</option></select></label>
+          <label className="select-field"><select value={order} onChange={(event) => setOrder(event.target.value as typeof order)} aria-label="Ordenar pacientes"><option value="recent">Atualizados recentemente</option><option value="alphabetical">Ordem alfabética</option><option value="appointment">Próximas consultas</option></select></label>
+          {(query || status !== 'all' || order !== 'recent') && <button className="button button--ghost clear-filters" type="button" onClick={() => { setQuery(''); setStatus('all'); setOrder('recent') }}><X size={15} /> Limpar filtros</button>}
         </header>
 
         <div className="table-meta"><span>{patients.length} {patients.length === 1 ? 'paciente encontrado' : 'pacientes encontrados'}</span><span>Dados fictícios</span></div>
