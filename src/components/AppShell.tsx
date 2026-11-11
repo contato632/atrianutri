@@ -60,13 +60,13 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
         <div className="sidebar__secondary">
           {mode === 'supabase' && <NavLink to="/seguranca" className={({ isActive }) => `nav-item ${isActive ? 'nav-item--active' : ''}`}><ShieldCheck size={19} /><span>Segurança</span></NavLink>}
         </div>
-        <button type="button" className="collapse-button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}>
+        <button type="button" className="collapse-button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'} aria-expanded={!collapsed}>
           {collapsed ? <ChevronRight size={17} /> : <><ChevronLeft size={17} /><span>Recolher menu</span></>}
         </button>
       </aside>
 
-      <div className={`mobile-drawer ${mobileOpen ? 'mobile-drawer--open' : ''}`} aria-hidden={!mobileOpen}>
-        <div className="mobile-drawer__panel">
+      <div id="mobile-navigation" className={`mobile-drawer ${mobileOpen ? 'mobile-drawer--open' : ''}`} aria-hidden={!mobileOpen} inert={!mobileOpen}>
+        <div className="mobile-drawer__panel" role="dialog" aria-modal="true" aria-label="Menu principal">
           <div className="mobile-drawer__top"><Brand /><button type="button" className="icon-button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu"><X /></button></div>
           <NavItems onNavigate={() => setMobileOpen(false)} />
         </div>
@@ -76,7 +76,7 @@ export function AppShell({ mode = 'demo', identity, organizationId, onOrganizati
       <main className="app-main">
         <header className="topbar">
           <div className="topbar__title">
-            <button type="button" className="icon-button mobile-menu-button" onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Menu size={21} /></button>
+            <button type="button" className="icon-button mobile-menu-button" onClick={() => setMobileOpen(true)} aria-label="Abrir menu" aria-expanded={mobileOpen} aria-controls="mobile-navigation"><Menu size={21} /></button>
             <div><span>{meta.eyebrow}</span><h1>{meta.title}</h1></div>
           </div>
           <div className="topbar__actions">

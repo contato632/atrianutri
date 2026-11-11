@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { currentDateInBahia } from '../lib/format'
 import { appointmentSchema, assessmentSchema, dietaryRecall24hSchema, foodDiaryEntrySchema, habitCheckInSchema, habitGoalSchema, nutritionEvaluationSchema, patientSchema, professionalServiceSchema } from './validation'
 
 describe('patientSchema', () => {
@@ -39,6 +40,12 @@ describe('assessmentSchema', () => {
 })
 
 describe('avaliação completa e recordatório de 24 horas', () => {
+  it('aceita a data civil atual da Bahia e rejeita somente datas posteriores', () => {
+    const today=currentDateInBahia();const tomorrowDate=new Date(`${today}T12:00:00Z`);tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);const tomorrow=tomorrowDate.toISOString().slice(0,10)
+    const evaluation={patientId:'patient-1',consultationReason:'',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000001'}
+    expect(nutritionEvaluationSchema.safeParse({...evaluation,evaluatedOn:today}).success).toBe(true)
+    expect(nutritionEvaluationSchema.safeParse({...evaluation,evaluatedOn:tomorrow}).success).toBe(false)
+  })
   it('aceita campos clínicos opcionais sem inferências', () => {
     expect(nutritionEvaluationSchema.safeParse({ patientId:'patient-1',evaluatedOn:'2026-11-08',consultationReason:'',healthHistory:'',reportedAllergies:'',reportedMedications:'',previousNutritionCare:'',foodRestrictionsAndPreferences:'',usualMealSchedule:'',usualMealsCount:'',mealEnvironment:'',foodAccess:'',hydration:'',reportedDifficulties:'',professionalObservations:'',submissionKey:'50000000-0000-4000-8000-000000000001' }).success).toBe(true)
   })

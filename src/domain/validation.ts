@@ -1,8 +1,11 @@
 import { z } from 'zod'
+import { currentDateInBahia } from '../lib/format'
+
+const isNotFutureDateInBahia = (value: string) => value <= currentDateInBahia()
 
 export const patientSchema = z.object({
   fullName: z.string().trim().min(3, 'Informe o nome completo.').max(160),
-  birthDate: z.string().date('Informe uma data válida.').refine((value) => new Date(`${value}T12:00:00`) <= new Date(), 'A data não pode estar no futuro.'),
+  birthDate: z.string().date('Informe uma data válida.').refine(isNotFutureDateInBahia, 'A data não pode estar no futuro.'),
   phone: z.string().trim().min(10, 'Informe um telefone com DDD.').max(24),
   email: z.string().trim().email('Informe um e-mail válido.').max(320),
   status: z.enum(['active', 'follow-up', 'paused']),
@@ -77,7 +80,7 @@ const optionalClinicalText = (maximum: number) => z.string().trim().max(maximum)
 
 export const nutritionEvaluationSchema = z.object({
   patientId: z.string().min(1),
-  evaluatedOn: z.string().date('Informe uma data válida.').refine((value) => new Date(`${value}T12:00:00`) <= new Date(), 'A data não pode estar no futuro.'),
+  evaluatedOn: z.string().date('Informe uma data válida.').refine(isNotFutureDateInBahia, 'A data não pode estar no futuro.'),
   consultationReason: optionalClinicalText(4000), healthHistory: optionalClinicalText(8000), reportedAllergies: optionalClinicalText(4000),
   reportedMedications: optionalClinicalText(4000), previousNutritionCare: optionalClinicalText(4000), foodRestrictionsAndPreferences: optionalClinicalText(8000),
   usualMealSchedule: optionalClinicalText(4000), usualMealsCount: optionalClinicalText(200), mealEnvironment: optionalClinicalText(4000),
@@ -94,7 +97,7 @@ const recallMealSchema = z.object({
 
 export const dietaryRecall24hSchema = z.object({
   evaluationId: z.string().min(1), patientId: z.string().min(1),
-  recallDate: z.string().date('Informe uma data válida.').refine((value) => new Date(`${value}T12:00:00`) <= new Date(), 'A data não pode estar no futuro.'),
+  recallDate: z.string().date('Informe uma data válida.').refine(isNotFutureDateInBahia, 'A data não pode estar no futuro.'),
   meals: z.array(recallMealSchema).min(1, 'Adicione ao menos uma refeição recordada.').max(20),
   complementaryNotes: optionalClinicalText(4000), submissionKey: z.string().uuid(),
 })
