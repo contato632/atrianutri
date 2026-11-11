@@ -1,0 +1,35 @@
+import { expect, test } from '@playwright/test'
+
+test('consulta composição e substitui alimento somente após confirmação', async ({ page }) => {
+  await page.goto('/planos')
+  const meal = page.locator('.meal-card').first()
+  await meal.getByRole('button', { name: 'Pesquisar no catálogo' }).click()
+  await meal.getByLabel('Buscar alimento no catálogo').fill('banana')
+  await meal.getByRole('button', { name: /Banana demonstrativa/ }).click()
+  const composition = meal.getByLabel('Composição de Banana demonstrativa')
+  await expect(composition).toContainText('Energia')
+  await expect(composition).toContainText('90 kcal')
+  await expect(composition).toContainText('Catálogo demonstrativo AtriaNutri')
+  await meal.getByRole('button', { name: 'Confirmar inclusão' }).click()
+
+  const row = meal.locator('.structured-food-row').last()
+  await row.getByRole('button', { name: 'Substituir pelo catálogo' }).click()
+  const replacement = row.locator('.catalog-replacement')
+  await replacement.getByRole('button', { name: 'Pesquisar no catálogo' }).click()
+  await replacement.getByLabel('Buscar alimento no catálogo').fill('maçã')
+  await replacement.getByRole('button', { name: /Maçã demonstrativa/ }).click()
+  await replacement.getByRole('button', { name: 'Confirmar substituição' }).click()
+  await expect(row).toContainText('Maçã demonstrativa')
+  await expect(row).toContainText('Substituiu Banana demonstrativa')
+})
+
+test('mantém busca e composição utilizáveis em 390 px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/planos')
+  const meal = page.locator('.meal-card').first()
+  await meal.getByRole('button', { name: 'Pesquisar no catálogo' }).click()
+  await meal.getByLabel('Buscar alimento no catálogo').fill('feijão')
+  await meal.getByRole('button', { name: /Feijão demonstrativo/ }).click()
+  await expect(meal.getByLabel('Composição de Feijão demonstrativo')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+})

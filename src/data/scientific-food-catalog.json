@@ -10,6 +10,16 @@
     "dataset": "Foundation Foods",
     "downloadUrl": null,
     "archiveSha256": null,
+    "archiveVerified": false,
+    "selectionSha256": null,
+    "contentSha256": null,
+    "importReport": {
+      "selectedFoods": 0,
+      "importedFoods": 0,
+      "sourceRows": { "foods": 0, "foodNutrients": 0, "nutrients": 0 },
+      "knownNutrients": 0,
+      "unavailableNutrients": 0
+    },
     "fileChecksums": {}
   },
   "foods": []
