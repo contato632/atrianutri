@@ -359,6 +359,26 @@ export interface FinancialExpense {
   updatedAt: string
 }
 
+export type AnamnesisKind = 'initial' | 'update' | 'complement'
+export type AnamnesisStatus = 'draft' | 'completed'
+export type AnamnesisAnswerState = 'informed' | 'unknown' | 'not-informed'
+export type AnamnesisAnswerSource = 'patient' | 'professional' | 'reviewed'
+export type AnamnesisAnswer = { value: string; state: AnamnesisAnswerState; source: AnamnesisAnswerSource }
+
+export interface AnamnesisRecord {
+  id: string
+  patientId: string
+  kind: AnamnesisKind
+  status: AnamnesisStatus
+  version: number
+  recordedOn: string
+  answers: Record<string, AnamnesisAnswer>
+  professionalPrivateNotes: string
+  authorLabel: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface NutritionWorkspace {
   patients: PatientAdministrative[]
   clinicalProfiles: PatientClinical[]
@@ -375,6 +395,7 @@ export interface NutritionWorkspace {
   financialPayments: FinancialPayment[]
   expenseCategories: ExpenseCategory[]
   financialExpenses: FinancialExpense[]
+  anamneses?: AnamnesisRecord[]
   patientInvitations?: PatientInvitation[]
   patientLinks?: PatientProfessionalLink[]
   mealPlanPublications?: MealPlanPublication[]
@@ -393,3 +414,4 @@ export type AppointmentInput = Omit<Appointment, 'id' | 'seriesId' | 'profession
 export type FinancialChargeInput = Omit<FinancialCharge, 'id' | 'canceledAt' | 'createdAt' | 'updatedAt'>
 export type FinancialPaymentInput = Omit<FinancialPayment, 'id' | 'kind' | 'reversesPaymentId' | 'createdAt' | 'createdByLabel'>
 export type FinancialExpenseInput = Omit<FinancialExpense, 'id' | 'createdAt' | 'updatedAt'>
+export type AnamnesisInput = Omit<AnamnesisRecord, 'id' | 'version' | 'authorLabel' | 'createdAt' | 'updatedAt'>

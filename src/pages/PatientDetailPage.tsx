@@ -3,21 +3,20 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { LoadingState } from '../components/LoadingState'
 import { Modal } from '../components/Modal'
-import { AnamnesisForm } from '../components/AnamnesisForm'
 import { FoodDiaryPanel } from '../components/FoodDiaryPanel'
 import { NutritionEvaluationPanel } from '../components/NutritionEvaluationPanel'
 import { PatientForm } from '../components/PatientForm'
 import { PatientFinancePanel } from '../components/PatientFinancePanel'
 import { PatientConnectionPanel } from '../components/PatientConnectionPanel'
+import { SmartAnamnesisPanel } from '../components/SmartAnamnesisPanel'
 import { ageFromBirthDate, interpretAdultBmi } from '../domain/nutrition'
 import { formatDate, formatDateTime, initials, statusLabel } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
 
 export function PatientDetailPage() {
   const { patientId } = useParams()
-  const { workspace, loading, updatePatient, saveClinicalProfile, selectPatient } = useWorkspace()
+  const { workspace, loading, updatePatient, selectPatient } = useWorkspace()
   const [editing, setEditing] = useState(false)
-  const [editingClinical, setEditingClinical] = useState(false)
   useEffect(() => { if (patientId) selectPatient(patientId) }, [patientId])
   if (loading) return <LoadingState lines={6} />
   const patient = workspace.patients.find((item) => item.id === patientId)
@@ -52,7 +51,7 @@ export function PatientDetailPage() {
             <div><dt>Hábitos e rotina</dt><dd className="anamnesis-preview">{clinical?.habits || 'Ainda não registrado'}</dd></div>
             <div><dt>Observações profissionais</dt><dd className="anamnesis-preview">{clinical?.professionalNotes || 'Nenhuma observação registrada'}</dd></div>
           </dl>
-          <button type="button" className="button button--soft anamnesis-open" onClick={() => setEditingClinical(true)}><ClipboardList size={16} /> {clinical ? 'Editar anamnese' : 'Registrar anamnese'}</button>
+          <a className="button button--soft anamnesis-open" href="#anamnese-inteligente"><ClipboardList size={16} /> Abrir anamnese estruturada</a>
           <p className="privacy-note"><LockKeyhole size={13} /> Registros clínicos acessíveis somente a profissionais autorizados.</p>
         </section>
 
@@ -69,18 +68,14 @@ export function PatientDetailPage() {
         </section>
       </div>
 
+      <SmartAnamnesisPanel patientId={patient.id} />
+
       <PatientConnectionPanel patientId={patient.id} />
 
       <NutritionEvaluationPanel patientId={patient.id} />
       <FoodDiaryPanel patientId={patient.id} />
       <PatientFinancePanel patientId={patient.id} />
 
-      {editingClinical && <Modal title="Anamnese nutricional" eyebrow="Registro clínico restrito" onClose={() => setEditingClinical(false)} size="large">
-        <AnamnesisForm profile={clinical} onCancel={() => setEditingClinical(false)} onSubmit={async (input, expectedUpdatedAt) => {
-          await saveClinicalProfile(patient.id, input, expectedUpdatedAt)
-          setEditingClinical(false)
-        }} />
-      </Modal>}
       {editing && <Modal title="Editar paciente" eyebrow="Cadastro administrativo" onClose={() => setEditing(false)} size="large"><PatientForm patient={patient} onCancel={() => setEditing(false)} onSubmit={async (input) => { await updatePatient(patient.id, input); setEditing(false) }} /></Modal>}
     </div>
   )
