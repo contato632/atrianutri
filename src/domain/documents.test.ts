@@ -54,6 +54,7 @@ describe('documentos nutricionais', () => {
     const serialized = JSON.stringify(buildNutritionDocument(workspace, value))
     expect(serialized).toContain('Informações nutricionais calculadas')
     expect(serialized).toContain('Catálogo demonstrativo AtriaNutri')
+    expect(serialized).toContain('Conteúdo fictício criado para demonstração')
     expect(serialized).toContain('parciais')
   })
 
