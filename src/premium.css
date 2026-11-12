@@ -332,6 +332,41 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .schedule-drawer { border-left: 1px solid var(--line); box-shadow: -24px 0 70px rgba(3,29,51,.17); }
 .empty-state p { font-size: 10.5px; }
 
+/* Etapa 21 — contexto contínuo e produtividade clínica. */
+.patient-journey {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 38px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid #cfe3e5;
+  border-radius: 15px;
+  background: linear-gradient(100deg, rgba(238,251,249,.96), rgba(255,255,255,.95));
+  box-shadow: var(--shadow-sm);
+}
+.patient-journey__patient { min-width: 170px; display: flex; align-items: center; gap: 9px; }
+.patient-journey__patient div { min-width: 0; display: grid; gap: 2px; }
+.patient-journey__patient small { color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.patient-journey__patient strong { overflow: hidden; color: var(--navy); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.patient-journey nav { min-width: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.patient-journey nav::-webkit-scrollbar { display: none; }
+.patient-journey nav a { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border-radius: 9px; color: #617b84; font-size: 9px; font-weight: 650; white-space: nowrap; }
+.patient-journey nav a:hover, .patient-journey nav a.active { color: var(--brand-700); background: #fff; box-shadow: 0 3px 10px rgba(3,37,57,.06); }
+.patient-journey__switch { display: grid; gap: 3px; }
+.patient-journey__switch span { color: var(--muted); font-size: 7px; text-transform: uppercase; }
+.patient-journey__switch select { width: 150px; height: 34px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 9px; }
+.patient-toolbar { flex-wrap: wrap; }
+.patient-toolbar .search-field { flex: 1 1 310px; }
+.patient-toolbar .select-field { flex: 0 1 210px; }
+.clear-filters { min-height: 44px; }
+.patient-scope-toggle { min-height: 33px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); background: #fff; font-size: 8px; font-weight: 700; }
+.patient-scope-toggle.active { color: var(--brand-700); border-color: #a9d9d6; background: var(--aqua-50); }
+.dashboard-empty { margin: 18px; color: var(--muted); font-size: 10px; }
+.required-hint { color: var(--muted); font-size: 9px; }
+.field span b { color: var(--danger); }
+
 /* Tablet and mobile are intentionally recomposed rather than scaled down. */
 @media (max-width: 1200px) {
   .sidebar { width: 232px; }
@@ -373,6 +408,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .calendar-grid--week .time-row { grid-template-columns: 52px repeat(7, minmax(102px, 1fr)); }
   .calendar-grid--week > .time-calendar__header,
   .calendar-grid--week .time-calendar__body { min-width: 766px; }
+  .patient-journey { grid-template-columns: minmax(0, 1fr) 38px; }
+  .patient-journey__patient { min-width: 0; }
+  .patient-journey nav { grid-row: 2; grid-column: 1 / -1; }
+  .patient-journey__switch { display: none; }
 }
 
 @media (max-width: 640px) {
@@ -400,6 +439,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .mobile-day-list { padding: 15px; }
   .homologation-controls, .homologation-details, .homologation-report { padding: 15px; }
   .modal { border-radius: 18px; }
+  .patient-journey { margin-bottom: 14px; padding: 9px; }
+  .patient-journey nav { margin-inline: -2px; padding-bottom: 2px; }
+  .patient-journey nav a { min-height: 40px; padding-inline: 10px; }
+  .patient-toolbar .search-field, .patient-toolbar .select-field, .patient-toolbar .clear-filters { width: 100%; flex-basis: auto; }
+  .appointment-item { min-width: 0; }
 }
 
 @media (max-width: 400px) {

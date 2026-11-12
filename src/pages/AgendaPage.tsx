@@ -33,13 +33,14 @@ function eventsOverlap(left: Appointment, right: Appointment) {
 }
 
 export function AgendaPage() {
-  const { workspace, saveAppointment, cancelAppointment } = useWorkspace()
+  const { workspace, saveAppointment, cancelAppointment, selectedPatientId, selectPatient } = useWorkspace()
   const [view, setView] = useState<'day' | 'week' | 'month'>('week')
   const [selectedDate, setSelectedDate] = useState(today)
   const [editor, setEditor] = useState<{ appointment?: Appointment; date: string; time: string } | null>(null)
   const [professional, setProfessional] = useState('all')
+  const [patientScope, setPatientScope] = useState(Boolean(selectedPatientId))
   const professionals = useMemo(() => Array.from(new Map(workspace.appointments.map((item) => [item.professionalId, item.professionalLabel])).entries()), [workspace.appointments])
-  const visible = workspace.appointments.filter((item) => professional === 'all' || item.professionalId === professional)
+  const visible = workspace.appointments.filter((item) => (professional === 'all' || item.professionalId === professional) && (!patientScope || !selectedPatientId || item.patientId === selectedPatientId))
   const weekStart = useMemo(() => {
     const date = new Date(`${selectedDate}T12:00:00Z`)
     date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7))
@@ -58,6 +59,7 @@ export function AgendaPage() {
     const date = dateInScheduleTimeZone(item.startsAt)
     setSelectedDate(date)
     setEditor({ appointment: item, date, time: timeInScheduleTimeZone(item.startsAt) })
+    if (item.patientId) selectPatient(item.patientId)
   }
   const eventTitle = (item: Appointment) => item.category === 'personal'
     ? item.privateTitle || 'Compromisso particular'
@@ -77,6 +79,7 @@ export function AgendaPage() {
         <strong>{formatDate(selectedDate)}</strong>
       </div>
       <div className="agenda-controls">
+        {selectedPatientId && <button type="button" className={`patient-scope-toggle ${patientScope ? 'active' : ''}`} onClick={() => setPatientScope((value) => !value)}>{patientScope ? 'Somente paciente atual' : 'Toda a agenda'}</button>}
         <select value={professional} onChange={(event) => setProfessional(event.target.value)} aria-label="Filtrar profissional"><option value="all">Todos os profissionais</option>{professionals.map(([id, label]) => <option value={id} key={id}>{label}</option>)}</select>
         <div className="view-switch">{(['day', 'week', 'month'] as const).map((item) => <button className={view === item ? 'active' : ''} onClick={() => setView(item)} key={item}>{item === 'day' ? 'Dia' : item === 'week' ? 'Semana' : 'Mês'}</button>)}</div>
       </div>
@@ -106,6 +109,6 @@ export function AgendaPage() {
 
     <section className="mobile-day-list" aria-label="Compromissos do dia selecionado"><header><strong>{formatDate(selectedDate)}</strong><span>{eventsFor(selectedDate).length} compromisso(s)</span></header>{eventsFor(selectedDate).length === 0 ? <p>Nenhum compromisso neste dia. Toque em um horário livre para adicionar.</p> : eventsFor(selectedDate).map((item) => <button key={item.id} className={`calendar-event event--${item.category}`} onClick={() => openEvent(item)}><time>{timeInScheduleTimeZone(item.startsAt)}</time><strong>{eventTitle(item)}</strong><span>{statusLabel[item.status]}</span></button>)}</section>
     <div className="agenda-legend">{Object.entries(categoryLabel).map(([key, label]) => <span key={key}><i className={`event--${key}`} />{label}</span>)}</div>
-    {editor && <div className="schedule-drawer-backdrop" onClick={() => setEditor(null)}><aside className="schedule-drawer" aria-label="Configurar agendamento" onClick={(event) => event.stopPropagation()}><AppointmentForm workspace={workspace} appointment={editor.appointment} initialDate={editor.date} initialTime={editor.time} professionalId={professional === 'all' ? undefined : professional} onClose={() => setEditor(null)} onSave={async (input, scope) => { await saveAppointment(input, editor.appointment, scope); setEditor(null) }} onCancelAppointment={editor.appointment ? async (scope) => { await cancelAppointment(editor.appointment!, scope); setEditor(null) } : undefined} /></aside></div>}
+    {editor && <div className="schedule-drawer-backdrop"><aside className="schedule-drawer" aria-label="Configurar agendamento"><AppointmentForm workspace={workspace} appointment={editor.appointment} initialDate={editor.date} initialTime={editor.time} initialPatientId={selectedPatientId} professionalId={professional === 'all' ? undefined : professional} onClose={() => setEditor(null)} onSave={async (input, scope) => { await saveAppointment(input, editor.appointment, scope); if (input.patientId) selectPatient(input.patientId); setEditor(null) }} onCancelAppointment={editor.appointment ? async (scope) => { await cancelAppointment(editor.appointment!, scope); setEditor(null) } : undefined} /></aside></div>}
   </div>
 }

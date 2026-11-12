@@ -5,12 +5,13 @@ import { APP_TIME_ZONE, currentDateInBahia, formatDate, initials, relativeDateLa
 import { useWorkspace } from '../state/WorkspaceContext'
 
 export function DashboardPage() {
-  const { workspace, loading } = useWorkspace()
+  const { workspace, loading, selectPatient } = useWorkspace()
   if (loading) return <LoadingState lines={6} />
 
   const activePatients = workspace.patients.filter((patient) => patient.status !== 'paused')
   const today = currentDateInBahia()
-  const upcoming = workspace.patients.filter((patient) => patient.nextAppointment && currentDateInBahia(new Date(patient.nextAppointment)) >= today).sort((a, b) => (a.nextAppointment ?? '').localeCompare(b.nextAppointment ?? '')).slice(0, 3)
+  const upcomingAppointments = workspace.appointments.filter((appointment) => appointment.patientId && appointment.status !== 'canceled' && currentDateInBahia(new Date(appointment.startsAt)) >= today).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+  const upcoming = upcomingAppointments.slice(0, 3)
   const recentAssessments = [...workspace.assessments].sort((a, b) => b.assessedAt.localeCompare(a.assessedAt)).slice(0, 3)
   const draftPlans = workspace.mealPlans.filter((plan) => plan.status === 'draft')
 
@@ -23,7 +24,7 @@ export function DashboardPage() {
 
       <section className="metric-grid" aria-label="Indicadores do consultório">
         <article className="metric-card"><span className="metric-card__icon blue"><Users /></span><div><span>Pacientes acompanhados</span><strong>{activePatients.length}</strong><small><span className="positive-dot" /> {activePatients.filter((p) => p.status === 'active').length} em acompanhamento ativo</small></div></article>
-        <article className="metric-card"><span className="metric-card__icon teal"><CalendarCheck2 /></span><div><span>Consultas próximas</span><strong>{upcoming.length}</strong><small>Nos próximos dias</small></div></article>
+        <article className="metric-card"><span className="metric-card__icon teal"><CalendarCheck2 /></span><div><span>Consultas próximas</span><strong>{upcomingAppointments.length}</strong><small>Agendamentos futuros registrados</small></div></article>
         <article className="metric-card"><span className="metric-card__icon violet"><TrendingDown /></span><div><span>Avaliações registradas</span><strong>{workspace.assessments.length}</strong><small>Evolução longitudinal disponível</small></div></article>
         <article className="metric-card"><span className="metric-card__icon amber"><ListTodo /></span><div><span>Planos em rascunho</span><strong>{draftPlans.length}</strong><small>{draftPlans.length ? 'Requer revisão profissional' : 'Tudo revisado'}</small></div></article>
       </section>
@@ -32,21 +33,22 @@ export function DashboardPage() {
         <section className="panel dashboard-schedule">
           <header className="panel__header"><div><span className="eyebrow">Agenda</span><h3>Próximas consultas</h3></div><Link to="/agenda" className="text-button">Ver agenda <ArrowRight size={15} /></Link></header>
           <div className="appointment-list">
-            {upcoming.map((patient) => { const appointment = workspace.appointments.find((item) => item.patientId === patient.id && item.startsAt === patient.nextAppointment); const duration = appointment ? Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / 60_000) : 50; return <article className="appointment-item" key={patient.id}>
-              <div className="appointment-time"><strong>{new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIME_ZONE }).format(new Date(patient.nextAppointment!))}</strong><span>{relativeDateLabel(patient.nextAppointment!)}</span></div>
-              <span className="avatar avatar--sm">{initials(patient.fullName)}</span>
-              <div className="appointment-person"><strong>{patient.fullName}</strong><span>{appointment?.category === 'follow-up' ? 'Retorno nutricional' : 'Acompanhamento'}</span></div>
+            {upcoming.map((appointment) => { const patient = workspace.patients.find((item) => item.id === appointment.patientId); const duration = Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / 60_000); return <Link to="/agenda" onClick={() => patient && selectPatient(patient.id)} className="appointment-item" key={appointment.id}>
+              <div className="appointment-time"><strong>{new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: APP_TIME_ZONE }).format(new Date(appointment.startsAt))}</strong><span>{relativeDateLabel(appointment.startsAt)}</span></div>
+              <span className="avatar avatar--sm">{initials(patient?.fullName ?? 'Paciente')}</span>
+              <div className="appointment-person"><strong>{patient?.fullName ?? 'Paciente não associado'}</strong><span>{appointment.category === 'follow-up' ? 'Retorno nutricional' : 'Acompanhamento'}</span></div>
               <span className="tag tag--subtle"><Clock3 size={13} /> {duration} min</span>
-            </article>})}
+            </Link>})}
+            {!upcoming.length && <p className="dashboard-empty">Nenhuma consulta futura registrada.</p>}
           </div>
         </section>
 
         <section className="panel attention-panel">
           <header className="panel__header"><div><span className="eyebrow">Acompanhamento</span><h3>Pendências</h3></div></header>
           <div className="task-list">
-            <Link to="/planos" className="task-item"><span className="task-icon amber"><UtensilsCrossed size={17} /></span><div><strong>Revisar plano de Ana</strong><span>Rascunho atualizado recentemente</span></div><ArrowRight size={16} /></Link>
-            <Link to="/avaliacoes" className="task-item"><span className="task-icon blue"><ClipboardPlus size={17} /></span><div><strong>Avaliação de Luiza</strong><span>Primeira avaliação pendente</span></div><ArrowRight size={16} /></Link>
-            <div className="task-item task-item--done"><span className="task-icon green"><CheckCircle2 size={17} /></span><div><strong>Feedback de Rafael</strong><span>Registrado nesta semana</span></div></div>
+            {draftPlans.slice(0, 2).map((plan) => { const patient = workspace.patients.find((item) => item.id === plan.patientId); return <Link to="/planos" onClick={() => selectPatient(plan.patientId)} className="task-item" key={plan.id}><span className="task-icon amber"><UtensilsCrossed size={17} /></span><div><strong>Revisar plano de {patient?.fullName ?? 'paciente'}</strong><span>Rascunho registrado em {formatDate(plan.updatedAt)}</span></div><ArrowRight size={16} /></Link> })}
+            {activePatients.filter((patient) => !workspace.assessments.some((assessment) => assessment.patientId === patient.id)).slice(0, Math.max(0, 3 - draftPlans.length)).map((patient) => <Link to="/avaliacoes" onClick={() => selectPatient(patient.id)} className="task-item" key={patient.id}><span className="task-icon blue"><ClipboardPlus size={17} /></span><div><strong>Avaliação inicial de {patient.fullName}</strong><span>Nenhuma avaliação antropométrica registrada</span></div><ArrowRight size={16} /></Link>)}
+            {!draftPlans.length && activePatients.every((patient) => workspace.assessments.some((assessment) => assessment.patientId === patient.id)) && <div className="task-item task-item--done"><span className="task-icon green"><CheckCircle2 size={17} /></span><div><strong>Nenhuma pendência calculada</strong><span>Os registros atuais não indicam ações administrativas abertas.</span></div></div>}
           </div>
         </section>
       </div>

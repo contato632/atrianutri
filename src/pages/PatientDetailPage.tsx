@@ -1,5 +1,5 @@
 import { ArrowLeft, CalendarDays, ClipboardList, Edit3, LockKeyhole, Mail, Phone, Ruler, Utensils } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { LoadingState } from '../components/LoadingState'
 import { Modal } from '../components/Modal'
@@ -15,9 +15,10 @@ import { useWorkspace } from '../state/WorkspaceContext'
 
 export function PatientDetailPage() {
   const { patientId } = useParams()
-  const { workspace, loading, updatePatient, saveClinicalProfile } = useWorkspace()
+  const { workspace, loading, updatePatient, saveClinicalProfile, selectPatient } = useWorkspace()
   const [editing, setEditing] = useState(false)
   const [editingClinical, setEditingClinical] = useState(false)
+  useEffect(() => { if (patientId) selectPatient(patientId) }, [patientId])
   if (loading) return <LoadingState lines={6} />
   const patient = workspace.patients.find((item) => item.id === patientId)
   if (!patient) return <Navigate to="/pacientes" replace />
