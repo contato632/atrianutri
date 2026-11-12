@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { MealPlan } from '../domain/models'
+import { emptyAnamnesisAnswers } from '../domain/anamnesis'
 import { RepositoryConflictError, SupabaseNutritionRepository } from './SupabaseNutritionRepository'
 
 const newPlan: MealPlan = {
@@ -36,6 +37,7 @@ describe('SupabaseNutritionRepository meal plan persistence', () => {
 })
 
 describe('SupabaseNutritionRepository clinical profile', () => {
+  it('salva anamnese somente pela RPC versionada',async()=>{const rpc=vi.fn().mockResolvedValue({data:{id:'a1',patient_id:'p1',kind:'initial',status:'draft',version:1,recorded_on:'2026-11-11',answers:emptyAnamnesisAnswers(),professional_private_notes:'',created_by:'u1',created_at:'2026-11-11T10:00:00Z',updated_at:'2026-11-11T10:00:00Z'},error:null});const saved=await new SupabaseNutritionRepository(clientWithRpc(rpc),'org-1').saveAnamnesis({patientId:'p1',kind:'initial',status:'draft',recordedOn:'2026-11-11',answers:emptyAnamnesisAnswers(),professionalPrivateNotes:''});expect(saved.version).toBe(1);expect(rpc).toHaveBeenCalledWith('save_nutrition_anamnesis',expect.objectContaining({p_organization_id:'org-1',p_patient_id:'p1',p_record_id:null}))})
   it('bloqueia overwrite quando o timestamp de anamnese mudou', async () => {
     const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
     const select = vi.fn().mockReturnValue({ maybeSingle })

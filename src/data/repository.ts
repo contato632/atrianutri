@@ -1,5 +1,6 @@
 import { calculateBmi } from '../domain/nutrition'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { AnamnesisInput, AnamnesisRecord, Appointment, AppointmentChangeScope, AppointmentInput, Assessment, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, PatientClinical, MealPlan, NutritionWorkspace, PatientAdministrative, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import { validateAnamnesis } from '../domain/anamnesis'
 import { hasAppointmentConflict, occurrenceInstants } from '../domain/scheduling'
 import { assertMoneyCents, chargeBalanceCents, netReceivedCents } from '../domain/financial'
 import { demoWorkspace } from './demo-data'
@@ -32,6 +33,7 @@ export interface NutritionRepository {
   endPatientLink(linkId: string): Promise<void>
   publishMealPlanVersion(mealPlanId: string, version: number): Promise<MealPlanPublication>
   revokeMealPlanPublication(publicationId: string): Promise<void>
+  saveAnamnesis(input: AnamnesisInput, recordId?: string, expectedUpdatedAt?: string): Promise<AnamnesisRecord>
 }
 
 const clone = <T,>(value: T): T => structuredClone(value)
@@ -88,6 +90,20 @@ export class DemoNutritionRepository implements NutritionRepository {
     const publication = (this.data.mealPlanPublications ?? []).find((item) => item.id === publicationId)
     if (!publication || publication.status !== 'active') throw new Error('Publicação ativa não encontrada.')
     publication.status = 'revoked'; publication.revokedAt = new Date().toISOString()
+  }
+
+  async saveAnamnesis(input: AnamnesisInput, recordId?: string, expectedUpdatedAt?: string) {
+    if (!this.data.patients.some((patient) => patient.id === input.patientId)) throw new Error('Paciente não encontrado no escopo clínico atual.')
+    validateAnamnesis(input)
+    const records = this.data.anamneses ??= []
+    const previous = recordId ? records.find((item) => item.id === recordId) : undefined
+    if (previous && previous.patientId !== input.patientId) throw new Error('A anamnese não pertence ao paciente selecionado.')
+    if (previous?.status === 'draft' && expectedUpdatedAt && previous.updatedAt !== expectedUpdatedAt) throw new Error('Este rascunho foi alterado em outra sessão. Atualize antes de salvar.')
+    const timestamp = new Date().toISOString()
+    const nextVersion = Math.max(0, ...records.filter((item) => item.patientId === input.patientId).map((item) => item.version)) + (previous?.status === 'draft' ? 0 : 1)
+    const saved: AnamnesisRecord = { ...clone(input), id: previous?.status === 'draft' ? previous.id : id('anamnesis'), version: previous?.status === 'draft' ? previous.version : nextVersion, authorLabel: 'Dra. Marina · Nutricionista', createdAt: previous?.status === 'draft' ? previous.createdAt : timestamp, updatedAt: timestamp }
+    this.data.anamneses = [saved, ...records.filter((item) => item.id !== saved.id)]
+    return clone(saved)
   }
 
   async createPatient(input: PatientInput) {

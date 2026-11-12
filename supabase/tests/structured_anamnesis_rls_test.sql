@@ -1,0 +1,11 @@
+begin;
+select plan(7);
+select has_table('public','nutrition_anamneses','structured anamnesis table exists');
+select has_function('public','save_nutrition_anamnesis',array['uuid','uuid','nutrition_anamnesis_kind','nutrition_anamnesis_status','date','jsonb','text','uuid','timestamp with time zone'],'versioned save function exists');
+select ok((select relrowsecurity from pg_class where oid='public.nutrition_anamneses'::regclass),'RLS is enabled');
+select ok(not has_table_privilege('anon','public.nutrition_anamneses','select'),'anonymous cannot read anamneses');
+select ok(not has_table_privilege('authenticated','public.nutrition_anamneses','insert'),'client cannot bypass versioned save with direct insert');
+select ok(not has_table_privilege('authenticated','public.nutrition_anamneses','update'),'client cannot overwrite history directly');
+select results_eq($$select count(*)::bigint from pg_policies where schemaname='public' and tablename='nutrition_anamneses'$$,array[1::bigint],'only explicit professional read policy exists');
+select * from finish();
+rollback;

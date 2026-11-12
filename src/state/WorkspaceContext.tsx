@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { AnamnesisInput, AnamnesisRecord, Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
@@ -34,6 +34,7 @@ type WorkspaceContextValue = {
   endPatientLink:(linkId:string)=>Promise<void>
   publishMealPlanVersion:(mealPlanId:string,version:number)=>Promise<MealPlanPublication>
   revokeMealPlanPublication:(publicationId:string)=>Promise<void>
+  saveAnamnesis:(input:AnamnesisInput,record?:AnamnesisRecord)=>Promise<AnamnesisRecord>
   refresh: () => Promise<void>
 }
 
@@ -144,6 +145,7 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     async endPatientLink(linkId){await repository.endPatientLink(linkId);await refresh()},
     async publishMealPlanVersion(mealPlanId,version){const saved=await repository.publishMealPlanVersion(mealPlanId,version);await refresh();return saved},
     async revokeMealPlanPublication(publicationId){await repository.revokeMealPlanPublication(publicationId);await refresh()},
+    async saveAnamnesis(input,record){const saved=await repository.saveAnamnesis(input,record?.id,record?.updatedAt);await refresh();return saved},
   }), [workspace, loading, error, repository, selectedPatientId])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

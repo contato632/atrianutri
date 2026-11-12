@@ -7,7 +7,7 @@ import { useWorkspace } from '../state/WorkspaceContext'
 import { LoadingState } from '../components/LoadingState'
 import { ClinicalAssistantPanel } from '../components/ClinicalAssistantPanel'
 
-const eventLabels: Record<IntelligenceEventType, string> = { assessment: 'Antropometria', evaluation: 'Avaliação', diary: 'Diário alimentar', barrier: 'Dificuldade relatada', goal: 'Meta', habit: 'Acompanhamento', 'plan-version': 'Versão do plano', 'plan-publication': 'Publicação do plano' }
+const eventLabels: Record<IntelligenceEventType, string> = { assessment: 'Antropometria', evaluation: 'Avaliação', anamnesis:'Anamnese', diary: 'Diário alimentar', barrier: 'Dificuldade relatada', goal: 'Meta', habit: 'Acompanhamento', 'plan-version': 'Versão do plano', 'plan-publication': 'Publicação do plano' }
 const originLabels = { professional: 'Registro profissional', patient: 'Relato do paciente', system: 'Regra do sistema' }
 
 export function NutritionIntelligencePage() {

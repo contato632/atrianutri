@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
+  AnamnesisInput,
+  AnamnesisRecord,
   Appointment,
   AppointmentChangeScope,
   AppointmentInput,
@@ -38,6 +40,7 @@ import type {
   MealPlanPublication,
 } from '../domain/models'
 import type { NutritionRepository } from './repository'
+import { validateAnamnesis } from '../domain/anamnesis'
 
 type QueryError = { code?: string; message?: string } | null
 
@@ -117,7 +120,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
   async revokeMealPlanPublication(_publicationId: string): Promise<void> { throw new Error('Publicações reais permanecem bloqueadas até a homologação da migration da Etapa 16.') }
 
   async snapshot(): Promise<NutritionWorkspace> {
-    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult, serviceResult, appointmentResult, seriesResult, appointmentPrivateResult, chargeResult, paymentResult, expenseCategoryResult, expenseResult] = await Promise.all([
+    const [patientResult, clinicalResult, assessmentResult, planResult, versionResult, diaryResult, goalResult, checkInResult, privateNoteResult, evaluationResult, recallResult, serviceResult, appointmentResult, seriesResult, appointmentPrivateResult, chargeResult, paymentResult, expenseCategoryResult, expenseResult, anamnesisResult] = await Promise.all([
       this.client.from('patients_administrative').select('id,full_name,birth_date,phone,email,status,next_appointment_at,created_at').eq('organization_id', this.organizationId).is('archived_at', null).order('full_name'),
       this.client.from('patient_clinical_profiles').select('patient_id,goal,food_history,habits,professional_notes,updated_at').eq('organization_id', this.organizationId),
       this.client.from('nutrition_assessments').select('id,patient_id,assessed_at,weight_kg,height_cm,waist_cm,hip_cm,arm_cm,body_fat_percentage,bmi,notes,created_at').eq('organization_id', this.organizationId).order('assessed_at', { ascending: false }),
@@ -137,6 +140,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       this.client.from('financial_payments').select('id,charge_id,kind,amount_cents,method,received_at,administrative_note,idempotency_key,reverses_payment_id,installment_number,installment_count,created_at,created_by').eq('organization_id',this.organizationId).order('received_at',{ascending:false}),
       this.client.from('expense_categories').select('id,name,active').eq('organization_id',this.organizationId).order('name'),
       this.client.from('financial_expenses').select('id,category_id,description,amount_cents,competence_date,due_date,paid_at,status,administrative_note,created_at,updated_at').eq('organization_id',this.organizationId).order('due_date',{ascending:false}),
+      this.client.from('nutrition_anamneses').select('id,patient_id,kind,status,version,recorded_on,answers,professional_private_notes,created_by,created_at,updated_at').eq('organization_id',this.organizationId).order('version',{ascending:false}),
     ])
 
     const patientRows = requireData(patientResult.data, patientResult.error, 'Não foi possível carregar os pacientes.')
@@ -158,6 +162,7 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const paymentRows=requireData(paymentResult.data,paymentResult.error,'Não foi possível carregar os recebimentos.')
     const expenseCategoryRows=requireData(expenseCategoryResult.data,expenseCategoryResult.error,'Não foi possível carregar as categorias de despesa.')
     const expenseRows=requireData(expenseResult.data,expenseResult.error,'Não foi possível carregar as despesas.')
+    const anamnesisRows=requireData(anamnesisResult.data,anamnesisResult.error,'Não foi possível carregar as anamneses.')
     const privateNote = (field: 'food_diary_entry_id' | 'habit_goal_id' | 'habit_check_in_id', id: unknown) => String(privateNoteRows.find((row) => row[field] === id)?.content ?? '')
 
     const patients: PatientAdministrative[] = patientRows.map((row) => ({
@@ -245,8 +250,9 @@ export class SupabaseNutritionRepository implements NutritionRepository {
     const financialPayments:FinancialPayment[]=paymentRows.map((row)=>({id:String(row.id),chargeId:String(row.charge_id),kind:String(row.kind) as FinancialPayment['kind'],amountCents:Number(row.amount_cents),method:String(row.method).replaceAll('_','-') as FinancialPayment['method'],receivedAt:String(row.received_at),administrativeNote:String(row.administrative_note??''),idempotencyKey:String(row.idempotency_key),reversesPaymentId:row.reverses_payment_id?String(row.reverses_payment_id):undefined,installmentNumber:row.installment_number===null?undefined:Number(row.installment_number),installmentCount:row.installment_count===null?undefined:Number(row.installment_count),createdAt:String(row.created_at),createdByLabel:`Profissional · ${String(row.created_by).slice(0,8)}`}))
     const expenseCategories=expenseCategoryRows.map((row)=>({id:String(row.id),name:String(row.name),active:Boolean(row.active)}))
     const financialExpenses:FinancialExpense[]=expenseRows.map((row)=>({id:String(row.id),categoryId:String(row.category_id),description:String(row.description),amountCents:Number(row.amount_cents),competenceDate:String(row.competence_date),dueDate:String(row.due_date),paidAt:row.paid_at?String(row.paid_at):undefined,status:String(row.status) as FinancialExpense['status'],administrativeNote:String(row.administrative_note??''),createdAt:String(row.created_at),updatedAt:String(row.updated_at)}))
+    const anamneses:AnamnesisRecord[]=anamnesisRows.map((row)=>({id:String(row.id),patientId:String(row.patient_id),kind:String(row.kind) as AnamnesisRecord['kind'],status:String(row.status) as AnamnesisRecord['status'],version:Number(row.version),recordedOn:String(row.recorded_on),answers:structuredClone(row.answers??{}),professionalPrivateNotes:String(row.professional_private_notes??''),authorLabel:`Profissional · ${String(row.created_by).slice(0,8)}`,createdAt:String(row.created_at),updatedAt:String(row.updated_at)}))
 
-    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns, nutritionEvaluations, dietaryRecalls24h, professionalServices, appointments, financialCharges, financialPayments, expenseCategories, financialExpenses }
+    return { patients, clinicalProfiles, assessments, mealPlans, foodDiaryEntries, habitGoals, habitCheckIns, nutritionEvaluations, dietaryRecalls24h, professionalServices, appointments, financialCharges, financialPayments, expenseCategories, financialExpenses, anamneses }
   }
 
   async createPatient(input: PatientInput) {
@@ -284,6 +290,13 @@ export class SupabaseNutritionRepository implements NutritionRepository {
       nextAppointment: row.next_appointment_at ? String(row.next_appointment_at) : undefined,
       createdAt: String(row.created_at),
     }
+  }
+
+  async saveAnamnesis(input: AnamnesisInput, recordId?: string, expectedUpdatedAt?: string): Promise<AnamnesisRecord> {
+    validateAnamnesis(input)
+    const result=await this.client.rpc('save_nutrition_anamnesis',{p_organization_id:this.organizationId,p_patient_id:input.patientId,p_kind:input.kind,p_status:input.status,p_recorded_on:input.recordedOn,p_answers:input.answers,p_professional_private_notes:input.professionalPrivateNotes,p_record_id:recordId??null,p_expected_updated_at:expectedUpdatedAt??null})
+    const row=requireData(result.data,result.error,'A anamnese não foi confirmada pelo servidor.')
+    return {id:String(row.id),patientId:String(row.patient_id),kind:String(row.kind) as AnamnesisRecord['kind'],status:String(row.status) as AnamnesisRecord['status'],version:Number(row.version),recordedOn:String(row.recorded_on),answers:structuredClone(row.answers??{}),professionalPrivateNotes:String(row.professional_private_notes??''),authorLabel:`Profissional · ${String(row.created_by).slice(0,8)}`,createdAt:String(row.created_at),updatedAt:String(row.updated_at)}
   }
 
   async saveClinicalProfile(patientId: string, input: ClinicalProfileInput, expectedUpdatedAt?: string): Promise<PatientClinical> {
