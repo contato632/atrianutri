@@ -1,5 +1,5 @@
 import { BrainCircuit, CalendarDays, ClipboardList, FileText, UserRound, Utensils, X } from 'lucide-react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { initials } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
 
@@ -15,13 +15,16 @@ const journeyLinks = [
 export function PatientJourneyBar() {
   const { workspace, selectedPatientId, selectPatient } = useWorkspace()
   const location = useLocation()
+  const navigate = useNavigate()
   const patient = workspace.patients.find((item) => item.id === selectedPatientId)
   if (!patient || location.pathname === '/' || location.pathname.startsWith('/portal')) return null
+  const changePatient = (patientId: string) => { selectPatient(patientId); if (location.pathname.startsWith('/pacientes/')) navigate(`/pacientes/${patientId}`) }
+  const closeContext = () => { selectPatient(''); if (location.pathname.startsWith('/pacientes/')) navigate('/pacientes') }
 
   return <section className="patient-journey" aria-label="Contexto clínico atual">
     <div className="patient-journey__patient"><span className="avatar avatar--sm">{initials(patient.fullName)}</span><div><small>Paciente em contexto</small><strong>{patient.fullName}</strong></div></div>
     <nav aria-label="Atalhos clínicos">{journeyLinks.map(({ to, label, icon: Icon }) => <NavLink key={label} to={to(patient.id)} className={({ isActive }) => isActive ? 'active' : ''}><Icon size={15} /><span>{label}</span></NavLink>)}</nav>
-    <label className="patient-journey__switch"><span>Trocar paciente</span><select value={patient.id} onChange={(event) => selectPatient(event.target.value)} aria-label="Trocar contexto clínico">{workspace.patients.map((item) => <option value={item.id} key={item.id}>{item.fullName}</option>)}</select></label>
-    <button className="icon-button" type="button" onClick={() => selectPatient('')} aria-label="Encerrar contexto clínico"><X size={16} /></button>
+    <label className="patient-journey__switch"><span>Trocar paciente</span><select value={patient.id} onChange={(event) => changePatient(event.target.value)} aria-label="Trocar contexto clínico">{workspace.patients.map((item) => <option value={item.id} key={item.id}>{item.fullName}</option>)}</select></label>
+    <button className="icon-button" type="button" onClick={closeContext} aria-label="Encerrar contexto clínico"><X size={16} /></button>
   </section>
 }
