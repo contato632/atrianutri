@@ -1,7 +1,6 @@
 import { Download, FileBarChart, FileText, LockKeyhole, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { buildNutritionDocument, defaultDocumentOptions, documentDefinitions, type NutritionDocumentOptions, type NutritionDocumentType } from '../domain/documents'
-import { nutritionPdfBlob } from '../lib/nutritionPdf'
 import { useWorkspace } from '../state/WorkspaceContext'
 import { useDocumentPreferences } from '../state/DocumentPreferencesContext'
 import { ProfessionalDocumentSettings } from '../components/ProfessionalDocumentSettings'
@@ -57,9 +56,11 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
     setError('')
   }
 
-  function generatePreview() {
+  async function generatePreview() {
     try {
       const document = buildNutritionDocument(workspace, options)
+      // Isola a dependência pesada de PDF da rota: uma falha do gerador não derruba a navegação.
+      const { nutritionPdfBlob } = await import('../lib/nutritionPdf')
       const url = URL.createObjectURL(nutritionPdfBlob(document))
       setPreview((current) => { if (current) URL.revokeObjectURL(current.url); return { url, fileName: document.fileName, key: optionsKey } })
       setError('')
@@ -100,7 +101,7 @@ export function DocumentsPage({ authorized = true }: { authorized?: boolean }) {
         <label className="field"><span>Observações finais <small>opcional</small></span><textarea value={options.closingNotes} onChange={(event) => setOptions((current) => ({ ...current, closingNotes: event.target.value }))} rows={3} maxLength={2000} /></label>
         <p className="document-safety"><LockKeyhole size={14} /> Notas privadas do diário, metas e anamnese não são incluídas. Nenhuma assinatura, diagnóstico ou recomendação é criada automaticamente.</p>
         {error && <p className="form-error" role="alert">{error}</p>}
-        <div className="document-actions"><button type="button" className="button button--soft" onClick={generatePreview}><RefreshCw size={15} /> Atualizar prévia</button><button type="button" className="button button--primary" onClick={download} disabled={!preview || preview.key !== optionsKey}><Download size={15} /> Baixar PDF</button></div>
+        <div className="document-actions"><button type="button" className="button button--soft" onClick={() => void generatePreview()}><RefreshCw size={15} /> Atualizar prévia</button><button type="button" className="button button--primary" onClick={download} disabled={!preview || preview.key !== optionsKey}><Download size={15} /> Baixar PDF</button></div>
       </aside>
 
       <section className="panel document-preview"><header><div><span className="eyebrow">Pré-visualização fiel</span><h3>Página A4 final</h3></div><small>{preview && preview.key !== optionsKey ? 'Prévia desatualizada — atualize antes do download.' : 'O arquivo exibido é o mesmo PDF disponível para download.'}</small></header>{preview ? <iframe title="Pré-visualização do PDF" src={preview.url} /> : <div className="document-preview__empty"><FileText size={32} /><strong>Prévia ainda não gerada</strong><p>Informe o CRN, revise as seções e atualize a prévia.</p></div>}</section>
