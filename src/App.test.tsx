@@ -17,6 +17,16 @@ describe('App navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Seus pacientes' })).toBeInTheDocument()
   })
 
+
+  it('abre a Central de Documentos sem perder a navegação', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click((await screen.findAllByRole('link', { name: 'Documentos' }))[0])
+    expect(await screen.findByRole('heading', { name: 'Central de documentos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Página A4 final' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument()
+  })
+
   it('preserva o paciente em contexto durante a jornada profissional', async () => {
     const user = userEvent.setup()
     render(<App />)

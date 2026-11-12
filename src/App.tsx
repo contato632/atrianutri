@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { ProfessionalAuthPanel } from './auth/ProfessionalAuthPanel'
@@ -24,6 +24,35 @@ import type { NutritionRepository } from './data/repository'
 import { getSupabaseRuntime, type SupabaseRuntime } from './lib/supabase'
 
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage').then((module) => ({ default: module.DocumentsPage })))
+
+/**
+ * Documentos e o gerador de PDF são carregados sob demanda.
+ * Um chunk obsoleto após um deploy ou uma falha de renderização não deve
+ * desmontar toda a aplicação e deixar o usuário em uma tela branca.
+ */
+class DocumentsErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <section className="panel document-denied" role="alert">
+          <h2>Não foi possível abrir Documentos</h2>
+          <p>O módulo pode estar desatualizado após uma publicação. Recarregue a página para obter a versão mais recente.</p>
+          <div className="document-actions">
+            <button className="button button--primary" type="button" onClick={() => window.location.reload()}>Recarregar página</button>
+            <a className="button button--soft" href="/">Voltar ao início</a>
+          </div>
+        </section>
+      )
+    }
+    return this.props.children
+  }
+}
 
 type WorkspaceRoutesProps = {
   repository?: NutritionRepository
@@ -54,7 +83,7 @@ function WorkspaceRoutes({ repository, mode = 'demo', identity, organizationId, 
               <Route path="gestao" element={<ManagementPage />} />
               <Route path="agenda" element={<AgendaPage />} />
               <Route path="financeiro" element={<FinancialPage />} />
-              <Route path="documentos" element={<Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense>} />
+              <Route path="documentos" element={<DocumentsErrorBoundary><Suspense fallback={<div className="skeleton-list"><span className="skeleton" /><span className="skeleton" /></div>}><DocumentsPage authorized={documentsAuthorized} /></Suspense></DocumentsErrorBoundary>} />
               <Route path="intelligence" element={intelligenceAuthorized ? <NutritionIntelligencePage /> : <Navigate to="/" replace />} />
               <Route path="intelligence/homologacao" element={mode === 'demo' && intelligenceAuthorized ? <IntelligenceHomologationPage /> : <Navigate to="/" replace />} />
               {mode === 'supabase' && <Route path="seguranca" element={<SecurityPage />} />}
