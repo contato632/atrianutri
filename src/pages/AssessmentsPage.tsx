@@ -10,9 +10,9 @@ import { formatDate } from '../lib/format'
 import { useWorkspace } from '../state/WorkspaceContext'
 
 export function AssessmentsPage() {
-  const { workspace, loading, createAssessment } = useWorkspace()
+  const { workspace, loading, createAssessment, selectedPatientId, selectPatient } = useWorkspace()
   const firstWithAssessment = workspace.assessments[0]?.patientId ?? workspace.patients[0]?.id ?? ''
-  const [patientId, setPatientId] = useState(firstWithAssessment)
+  const [patientId, setPatientId] = useState(selectedPatientId || firstWithAssessment)
   const [modalOpen, setModalOpen] = useState(false)
   const patient = workspace.patients.find((item) => item.id === patientId)
   const assessments = useMemo(() => workspace.assessments.filter((item) => item.patientId === patientId).sort((a, b) => a.assessedAt.localeCompare(b.assessedAt)), [workspace.assessments, patientId])
@@ -20,14 +20,15 @@ export function AssessmentsPage() {
   const previous = assessments.at(-2)
   const chart = assessments.map((assessment) => ({ date: formatDate(assessment.assessedAt).replace(' de ', ' '), peso: assessment.weightKg, cintura: assessment.waistCm }))
   useEffect(() => {
-    if (!patientId && workspace.patients.length) setPatientId(workspace.assessments[0]?.patientId ?? workspace.patients[0].id)
-  }, [patientId, workspace.assessments, workspace.patients])
+    if (selectedPatientId && selectedPatientId !== patientId) setPatientId(selectedPatientId)
+    else if (!patientId && workspace.patients.length) setPatientId(workspace.assessments[0]?.patientId ?? workspace.patients[0].id)
+  }, [patientId, selectedPatientId, workspace.assessments, workspace.patients])
   if (loading) return <LoadingState lines={7} />
 
   return (
     <div className="page-stack">
       <section className="section-intro"><div><h2>Avaliação antropométrica</h2><p>Registre medidas aferidas e acompanhe a evolução com contexto.</p></div><button className="button button--primary" type="button" onClick={() => setModalOpen(true)}><Plus size={17} /> Nova avaliação</button></section>
-      <section className="panel assessment-filter"><div><span className="eyebrow">Paciente selecionado</span><select value={patientId} onChange={(event) => setPatientId(event.target.value)} aria-label="Selecionar paciente">{workspace.patients.map((item) => <option key={item.id} value={item.id}>{item.fullName}</option>)}</select></div><span className="tag tag--subtle">{assessments.length} {assessments.length === 1 ? 'registro' : 'registros'}</span></section>
+      <section className="panel assessment-filter"><div><span className="eyebrow">Paciente selecionado</span><select value={patientId} onChange={(event) => { setPatientId(event.target.value); selectPatient(event.target.value) }} aria-label="Selecionar paciente">{workspace.patients.map((item) => <option key={item.id} value={item.id}>{item.fullName}</option>)}</select></div><span className="tag tag--subtle">{assessments.length} {assessments.length === 1 ? 'registro' : 'registros'}</span></section>
 
       {latest ? <>
         <section className="assessment-metrics">
@@ -43,7 +44,7 @@ export function AssessmentsPage() {
         <div className="clinical-caution"><Info size={16} /><p><strong>Interpretação responsável:</strong> indicadores antropométricos apoiam a avaliação profissional, mas não constituem diagnóstico isolado. Considere idade, composição corporal, histórico e objetivos individualizados.</p></div>
       </> : <section className="panel"><EmptyState icon={ClipboardPlus} title={`Nenhuma avaliação para ${patient?.fullName ?? 'este paciente'}`} description="Registre a primeira avaliação antropométrica usando apenas dados fictícios nesta demonstração." action={<button type="button" className="button button--primary" onClick={() => setModalOpen(true)}>Nova avaliação</button>} /></section>}
 
-      {modalOpen && <Modal title="Nova avaliação" eyebrow="Antropometria" onClose={() => setModalOpen(false)} size="large"><AssessmentForm patients={workspace.patients} initialPatientId={patientId} onCancel={() => setModalOpen(false)} onSubmit={async (input) => { await createAssessment(input); setPatientId(input.patientId); setModalOpen(false) }} /></Modal>}
+      {modalOpen && <Modal title="Nova avaliação" eyebrow="Antropometria" onClose={() => setModalOpen(false)} size="large"><AssessmentForm patients={workspace.patients} initialPatientId={patientId} onCancel={() => setModalOpen(false)} onSubmit={async (input) => { await createAssessment(input); setPatientId(input.patientId); selectPatient(input.patientId); setModalOpen(false) }} /></Modal>}
     </div>
   )
 }

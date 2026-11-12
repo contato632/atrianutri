@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { MealPlan, NutritionWorkspace } from '../domain/models'
 import { DemoNutritionRepository } from './repository'
+import { emptyAnamnesisAnswers } from '../domain/anamnesis'
 
 const empty: NutritionWorkspace = { patients: [], clinicalProfiles: [], assessments: [], mealPlans: [], foodDiaryEntries: [], habitGoals: [], habitCheckIns: [], nutritionEvaluations: [], dietaryRecalls24h: [], professionalServices: [], appointments: [], financialCharges: [], financialPayments: [], expenseCategories: [{id:'cat',name:'Outras',active:true}], financialExpenses: [] }
 
 describe('DemoNutritionRepository', () => {
+  it('mantém rascunho editável e cria versões históricas concluídas',async()=>{const repository=new DemoNutritionRepository(empty);const patient=await repository.createPatient({fullName:'Paciente Anamnese',birthDate:'1990-01-01',phone:'(11) 90000-0010',email:'anamnese@demo.local',status:'active'});const answers=emptyAnamnesisAnswers();answers.reportedGoals={value:'Objetivo fictício',state:'informed',source:'patient'};const draft=await repository.saveAnamnesis({patientId:patient.id,kind:'initial',status:'draft',recordedOn:'2026-11-11',answers,professionalPrivateNotes:'Nota privada'});const completed=await repository.saveAnamnesis({...draft,status:'completed'},draft.id,draft.updatedAt);const update=await repository.saveAnamnesis({...completed,kind:'update',status:'completed',answers:{...answers,sleep:{value:'Sono relatado',state:'informed',source:'reviewed'}}});const history=(await repository.snapshot()).anamneses!;expect(completed.version).toBe(1);expect(update.version).toBe(2);expect(history).toHaveLength(2);expect(history.find((item)=>item.id===completed.id)?.answers.sleep.state).toBe('not-informed')})
   it('cria e edita paciente sem misturar o perfil clínico no cadastro', async () => {
     const repository = new DemoNutritionRepository(empty)
     const input = { fullName: 'Paciente Fictício', birthDate: '1995-02-10', phone: '(11) 99999-1111', email: 'ficticio@demo.local', status: 'active' as const }

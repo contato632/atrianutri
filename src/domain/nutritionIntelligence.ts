@@ -1,8 +1,9 @@
 import type { Assessment, NutritionWorkspace } from './models'
 import { publishedPlanVersion } from './patientConnection'
+import { anamnesisLongitudinalChanges, anamnesisProgress } from './anamnesis'
 
 export type IntelligenceOrigin = 'professional' | 'patient' | 'system'
-export type IntelligenceEventType = 'assessment' | 'evaluation' | 'diary' | 'barrier' | 'goal' | 'habit' | 'plan-version' | 'plan-publication'
+export type IntelligenceEventType = 'assessment' | 'evaluation' | 'anamnesis' | 'diary' | 'barrier' | 'goal' | 'habit' | 'plan-version' | 'plan-publication'
 export type DateRange = { start: string; end: string }
 export type IntelligenceEvent = { id: string; date: string; type: IntelligenceEventType; origin: IntelligenceOrigin; title: string; summary: string; href: string; sourceRefs: string[] }
 export type IntelligenceInsight = { id: string; title: string; message: string; rule: string; interval: DateRange; limitations: string; sourceRefs: string[]; href: string }
@@ -22,6 +23,7 @@ export function buildNutritionTimeline(workspace: NutritionWorkspace, patientId:
   const href = `/pacientes/${patientId}`; const events: IntelligenceEvent[] = []
   for (const item of workspace.assessments.filter((row) => row.patientId === patientId && inRange(row.assessedAt, range))) events.push({ id: `assessment:${item.id}`, date: item.assessedAt, type: 'assessment', origin: 'professional', title: 'Medidas antropométricas registradas', summary: `Peso ${item.weightKg.toLocaleString('pt-BR')} kg${item.waistCm === undefined ? '' : ` · cintura ${item.waistCm.toLocaleString('pt-BR')} cm`}.`, href, sourceRefs: [item.id] })
   for (const item of workspace.nutritionEvaluations.filter((row) => row.patientId === patientId && inRange(row.evaluatedOn, range))) events.push({ id: `evaluation:${item.id}`, date: item.evaluatedOn, type: 'evaluation', origin: 'professional', title: 'Avaliação nutricional registrada', summary: item.consultationReason || 'Avaliação estruturada sem motivo resumido.', href, sourceRefs: [item.id] })
+  for (const item of (workspace.anamneses ?? []).filter((row) => row.patientId === patientId && row.status === 'completed' && inRange(row.recordedOn, range))) events.push({ id:`anamnesis:${item.id}`,date:item.recordedOn,type:'anamnesis',origin:'professional',title:`Versão ${item.version} da anamnese registrada`,summary:`${anamnesisProgress(item.answers).documented} informações documentadas; fontes mantidas por resposta.`,href,sourceRefs:[item.id] })
   for (const item of workspace.foodDiaryEntries.filter((row) => row.patientId === patientId && inRange(row.entryDate, range))) {
     events.push({ id: `diary:${item.id}`, date: `${item.entryDate}T${item.mealTime}`, type: 'diary', origin: item.source, title: item.source === 'patient' ? 'Registro alimentar compartilhado pelo paciente' : 'Registro alimentar profissional', summary: `${mealTypeLabel[item.mealType]} · ${item.foods.length} ${item.foods.length === 1 ? 'item relatado' : 'itens relatados'}.`, href, sourceRefs: [item.id] })
     if (item.routineChanges.trim()) events.push({ id: `barrier:diary:${item.id}`, date: `${item.entryDate}T${item.mealTime}`, type: 'barrier', origin: item.source, title: 'Dificuldade ou mudança de rotina relatada', summary: item.routineChanges, href, sourceRefs: [item.id] })
@@ -81,6 +83,8 @@ export function generateDescriptiveInsights(workspace: NutritionWorkspace, patie
   else insights.push({ id: 'diary-count', title: 'Registros alimentares compartilhados', message: `O paciente compartilhou ${diary.patientReported} registros alimentares neste período.`, rule: 'Contagem de registros com origem patient.', interval: range, limitations: 'Quantidade de registros não mede adesão e o sistema não presume consumo do plano.', sourceRefs: diary.sourceRefs, href: `/pacientes/${patientId}` })
   const lastAssessment = assessments.at(-1); const publications = (workspace.mealPlanPublications ?? []).filter((item) => item.patientId === patientId && item.status === 'active' && inRange(item.publishedAt, range))
   if (lastAssessment && publications.some((item) => item.publishedAt.slice(0, 10) > lastAssessment.assessedAt)) insights.push({ id: 'plan-after-assessment', title: 'Sequência temporal do plano', message: 'Uma nova versão do plano alimentar foi disponibilizada após a última avaliação registrada.', rule: 'Comparação das datas da última avaliação e da publicação ativa.', interval: range, limitations: 'A sequência temporal não demonstra relação causal entre avaliação e plano.', sourceRefs: [lastAssessment.id, ...publications.map((item) => item.id)], href: '/planos' })
+  const anamnesisChanges=anamnesisLongitudinalChanges((workspace.anamneses??[]).filter((item)=>item.patientId===patientId&&inRange(item.recordedOn,range)))
+  if(anamnesisChanges.length) insights.push({id:'anamnesis-documented-changes',title:'Atualizações documentadas na anamnese',message:`A versão mais recente contém ${anamnesisChanges.length} ${anamnesisChanges.length===1?'campo diferente':'campos diferentes'} da versão anterior.`,rule:'Comparação textual entre as duas versões concluídas mais recentes da anamnese.',interval:range,limitations:'Diferença documental não significa melhora, piora, adesão ou mudança clínica confirmada.',sourceRefs:[...new Set(anamnesisChanges.flatMap((item)=>item.sourceRefs))],href:`/pacientes/${patientId}`})
   return insights
 }
 

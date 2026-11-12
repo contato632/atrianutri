@@ -16,4 +16,17 @@ describe('App navigation', () => {
     await user.click(screen.getAllByRole('link', { name: 'Pacientes' })[0])
     expect(await screen.findByRole('heading', { name: 'Seus pacientes' })).toBeInTheDocument()
   })
+
+  it('preserva o paciente em contexto durante a jornada profissional', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click((await screen.findAllByRole('link', { name: 'Pacientes' }))[0])
+    const patientName = await screen.findByText('Ana Beatriz Lima')
+    await user.click(patientName.closest('a')!)
+    expect(await screen.findByRole('navigation', { name: 'Atalhos clínicos' })).toBeInTheDocument()
+    expect(screen.getByText('Paciente em contexto')).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Plano' }))
+    expect(await screen.findByRole('heading', { name: 'Planejamento alimentar profissional' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Trocar contexto clínico')).toHaveValue('demo-patient-ana')
+  })
 })

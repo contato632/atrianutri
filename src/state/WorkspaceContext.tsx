@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
+import type { AnamnesisInput, AnamnesisRecord, Appointment, AppointmentChangeScope, AppointmentInput, AssessmentInput, ClinicalProfileInput, DietaryRecall24h, DietaryRecall24hInput, FinancialCharge, FinancialChargeInput, FinancialExpense, FinancialExpenseInput, FinancialPayment, FinancialPaymentInput, FoodDiaryEntry, FoodDiaryEntryInput, HabitCheckIn, HabitCheckInInput, HabitGoal, HabitGoalInput, MealPlan, MealPlanPublication, NutritionEvaluation, NutritionEvaluationInput, NutritionWorkspace, PatientInput, PatientInvitation, ProfessionalService, ProfessionalServiceInput } from '../domain/models'
 import { DemoNutritionRepository, type NutritionRepository } from '../data/repository'
 
 type WorkspaceContextValue = {
   workspace: NutritionWorkspace
   loading: boolean
   error: string | null
+  selectedPatientId: string
+  selectPatient: (patientId: string) => void
   createPatient: (input: PatientInput) => Promise<string>
   updatePatient: (id: string, input: PatientInput) => Promise<void>
   saveClinicalProfile: (patientId: string, input: ClinicalProfileInput, expectedUpdatedAt?: string) => Promise<void>
@@ -32,6 +34,7 @@ type WorkspaceContextValue = {
   endPatientLink:(linkId:string)=>Promise<void>
   publishMealPlanVersion:(mealPlanId:string,version:number)=>Promise<MealPlanPublication>
   revokeMealPlanPublication:(publicationId:string)=>Promise<void>
+  saveAnamnesis:(input:AnamnesisInput,record?:AnamnesisRecord)=>Promise<AnamnesisRecord>
   refresh: () => Promise<void>
 }
 
@@ -39,10 +42,15 @@ const emptyWorkspace: NutritionWorkspace = { patients: [], clinicalProfiles: [],
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const defaultDemoRepository = new DemoNutritionRepository()
 
-export function WorkspaceProvider({ children, repository = defaultDemoRepository }: { children: ReactNode; repository?: NutritionRepository }) {
+export function WorkspaceProvider({ children, repository = defaultDemoRepository, selectionScope = 'demo-organization' }: { children: ReactNode; repository?: NutritionRepository; selectionScope?: string }) {
   const [workspace, setWorkspace] = useState(emptyWorkspace)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedPatientId, setSelectedPatientId] = useState('')
+
+  function selectPatient(patientId: string) {
+    setSelectedPatientId(patientId)
+  }
 
   async function refresh() {
     try {
@@ -56,11 +64,17 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
   }
 
   useEffect(() => { void refresh() }, [repository])
+  useEffect(() => { setSelectedPatientId('') }, [selectionScope])
+  useEffect(() => {
+    if (!loading && selectedPatientId && !workspace.patients.some((patient) => patient.id === selectedPatientId)) selectPatient('')
+  }, [loading, selectedPatientId, workspace.patients])
 
   const value = useMemo<WorkspaceContextValue>(() => ({
     workspace,
     loading,
     error,
+    selectedPatientId,
+    selectPatient,
     refresh,
     async createPatient(input) {
       const patient = await repository.createPatient(input)
@@ -131,7 +145,8 @@ export function WorkspaceProvider({ children, repository = defaultDemoRepository
     async endPatientLink(linkId){await repository.endPatientLink(linkId);await refresh()},
     async publishMealPlanVersion(mealPlanId,version){const saved=await repository.publishMealPlanVersion(mealPlanId,version);await refresh();return saved},
     async revokeMealPlanPublication(publicationId){await repository.revokeMealPlanPublication(publicationId);await refresh()},
-  }), [workspace, loading, error, repository])
+    async saveAnamnesis(input,record){const saved=await repository.saveAnamnesis(input,record?.id,record?.updatedAt);await refresh();return saved},
+  }), [workspace, loading, error, repository, selectedPatientId])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }

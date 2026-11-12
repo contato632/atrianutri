@@ -59,11 +59,12 @@ Comando preparado:
 ```sh
 npm run catalog:import:usda -- \
   --input /caminho/release-oficial-descompactado \
+  --archive /caminho/arquivo-oficial-original.zip \
   --selection data/catalog/usda-selection.json \
   --output src/data/scientific-food-catalog.json
 ```
 
-O manifesto está intencionalmente incompleto e o comando recusa a importação até que release, URL, checksum e seleção revisada sejam preenchidos.
+O manifesto está intencionalmente incompleto e o comando recusa a importação até que release, URL, checksum e seleção revisada sejam preenchidos. Desde a Etapa 23, o hash declarado também precisa corresponder aos bytes do arquivo oficial informado em `--archive`.
 
 ## Mapeamento nutricional
 

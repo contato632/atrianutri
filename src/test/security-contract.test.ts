@@ -9,6 +9,7 @@ const evaluationMigration = readFileSync(join(root, 'supabase/migrations/2026110
 const scheduleMigration = readFileSync(join(root, 'supabase/migrations/20261108210000_professional_schedule.sql'), 'utf8')
 const scheduleHardeningMigration = readFileSync(join(root, 'supabase/migrations/20261108213000_professional_schedule_hardening.sql'), 'utf8')
 const financeMigration = readFileSync(join(root, 'supabase/migrations/20261108230000_office_finance.sql'), 'utf8')
+const anamnesisMigration = readFileSync(join(root, 'supabase/migrations/20261111140000_structured_nutrition_anamnesis.sql'), 'utf8')
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -207,4 +208,35 @@ describe('office finance migration contract',()=>{
   it('separa permissão financeira da autorização clínica',()=>{expect(financeMigration).toContain('organization_finance_permissions');expect(financeMigration).toContain('has_finance_access');expect(financeMigration).not.toContain('can_access_patient_clinical')})
   it('usa centavos, idempotência, lock e movimentos compensatórios',()=>{expect(financeMigration).toContain('amount_cents bigint');expect(financeMigration).toContain('idempotency_key uuid');expect(financeMigration).toContain('for update');expect(financeMigration).toContain("kind='reversal'");expect(financeMigration).toContain('Payment exceeds outstanding balance')})
   it('não concede mutação direta nem permite exclusão física',()=>{expect(financeMigration).toContain('revoke all on public.organization_finance_permissions,public.financial_charges');expect(financeMigration).not.toContain('grant insert on public.financial_payments');expect(financeMigration).not.toMatch(/delete from public\.financial_(charges|payments|expenses)/);expect(financeMigration).not.toContain('drop table')})
+})
+
+describe('structured nutrition anamnesis migration contract', () => {
+  it('habilita RLS e restringe a leitura ao vínculo clínico', () => {
+    expect(anamnesisMigration).toContain('alter table public.nutrition_anamneses enable row level security')
+    expect(anamnesisMigration).toContain('atrianutri_private.can_access_patient_clinical(organization_id,patient_id)')
+    expect(anamnesisMigration).toContain('revoke all on public.nutrition_anamneses from public,anon,authenticated')
+  })
+
+  it('preserva histórico imutável e concentra mutações na RPC versionada', () => {
+    expect(anamnesisMigration).toContain('unique (organization_id, patient_id, version)')
+    expect(anamnesisMigration).toContain('nutrition_anamneses_one_draft_idx')
+    expect(anamnesisMigration).toContain("status='draft'")
+    expect(anamnesisMigration).toContain('public.save_nutrition_anamnesis')
+    expect(anamnesisMigration).not.toContain('grant insert on public.nutrition_anamneses')
+    expect(anamnesisMigration).not.toContain('grant update on public.nutrition_anamneses')
+  })
+
+  it('protege notas privadas, autoria e isolamento organizacional', () => {
+    expect(anamnesisMigration).toContain('professional_private_notes')
+    expect(anamnesisMigration).toContain('foreign key (patient_id, organization_id)')
+    expect(anamnesisMigration).toContain('foreign key (organization_id, created_by)')
+    expect(anamnesisMigration).toContain("language plpgsql security definer set search_path='' ")
+    expect(anamnesisMigration).toContain('audit_sensitive_change')
+  })
+
+  it('não contém operações destrutivas', () => {
+    expect(anamnesisMigration).not.toContain('drop table')
+    expect(anamnesisMigration).not.toContain('truncate')
+    expect(anamnesisMigration).not.toMatch(/delete from public\.nutrition_anamneses/)
+  })
 })

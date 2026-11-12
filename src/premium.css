@@ -332,6 +332,67 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .schedule-drawer { border-left: 1px solid var(--line); box-shadow: -24px 0 70px rgba(3,29,51,.17); }
 .empty-state p { font-size: 10.5px; }
 
+/* Etapa 21 — contexto contínuo e produtividade clínica. */
+.patient-journey {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 38px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid #cfe3e5;
+  border-radius: 15px;
+  background: linear-gradient(100deg, rgba(238,251,249,.96), rgba(255,255,255,.95));
+  box-shadow: var(--shadow-sm);
+}
+.patient-journey__patient { min-width: 170px; display: flex; align-items: center; gap: 9px; }
+.patient-journey__patient div { min-width: 0; display: grid; gap: 2px; }
+.patient-journey__patient small { color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.patient-journey__patient strong { overflow: hidden; color: var(--navy); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.patient-journey nav { min-width: 0; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.patient-journey nav::-webkit-scrollbar { display: none; }
+.patient-journey nav a { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border-radius: 9px; color: #617b84; font-size: 9px; font-weight: 650; white-space: nowrap; }
+.patient-journey nav a:hover, .patient-journey nav a.active { color: var(--brand-700); background: #fff; box-shadow: 0 3px 10px rgba(3,37,57,.06); }
+.patient-journey__switch { display: grid; gap: 3px; }
+.patient-journey__switch span { color: var(--muted); font-size: 7px; text-transform: uppercase; }
+.patient-journey__switch select { width: 150px; height: 34px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 9px; }
+.patient-toolbar { flex-wrap: wrap; }
+.patient-toolbar .search-field { flex: 1 1 310px; }
+.patient-toolbar .select-field { flex: 0 1 210px; }
+.clear-filters { min-height: 44px; }
+.patient-scope-toggle { min-height: 33px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); background: #fff; font-size: 8px; font-weight: 700; }
+.patient-scope-toggle.active { color: var(--brand-700); border-color: #a9d9d6; background: var(--aqua-50); }
+.dashboard-empty { margin: 18px; color: var(--muted); font-size: 10px; }
+.required-hint { color: var(--muted); font-size: 9px; }
+.field span b { color: var(--danger); }
+.smart-anamnesis { overflow: hidden; }
+.smart-anamnesis__header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:20px 22px; border-bottom:1px solid var(--line); }
+.smart-anamnesis__header h3 { margin:5px 0; color:var(--navy); font-family:var(--font-display); font-size:20px; font-weight:500; }
+.smart-anamnesis__header p,.smart-anamnesis__empty { margin:0; color:var(--muted); font-size:10px; }
+.smart-anamnesis__header>div:last-child { display:flex; gap:8px; }
+.smart-anamnesis__overview { display:grid; grid-template-columns:repeat(3,1fr); padding:16px 22px; background:var(--surface-muted); }
+.smart-anamnesis__overview>div { min-width:0; display:grid; gap:4px; padding:0 18px; border-left:1px solid var(--line); }
+.smart-anamnesis__overview>div:first-child { padding-left:0; border-left:0; }
+.smart-anamnesis__overview strong { color:var(--navy); font-size:11px; }
+.smart-anamnesis__overview span { color:var(--muted); font-size:8.5px; line-height:1.5; }
+.anamnesis-history { border-top:1px solid var(--line); }
+.anamnesis-history>summary { display:flex; align-items:center; gap:8px; padding:14px 22px; color:var(--brand-700); font-size:10px; font-weight:700; cursor:pointer; }
+.anamnesis-history>div { padding:0 22px 16px; }
+.anamnesis-history article { display:grid; grid-template-columns:auto minmax(150px,1fr) auto auto; align-items:center; gap:12px; min-height:54px; border-top:1px solid var(--line); }
+.anamnesis-history article>div { display:grid; gap:3px; }
+.anamnesis-history article strong { color:var(--navy); font-size:10px; }.anamnesis-history article small,.anamnesis-history article>span { color:var(--muted); font-size:8px; }
+.smart-anamnesis__empty { padding:16px 22px; border-top:1px solid var(--line); }
+.anamnesis-wizard { display:grid; gap:14px; }
+.anamnesis-progress { display:grid; grid-template-columns:minmax(180px,1fr) 2fr auto; align-items:center; gap:14px; padding:12px 14px; border-radius:12px; background:var(--aqua-50); }
+.anamnesis-progress>div:first-child { display:grid; gap:2px; }.anamnesis-progress span,.anamnesis-progress small { color:var(--muted); font-size:8px; }.anamnesis-progress strong { color:var(--navy); font-size:11px; }
+.anamnesis-progress__track { height:6px; overflow:hidden; border-radius:10px; background:#d9eceb; }.anamnesis-progress__track i { height:100%; display:block; border-radius:10px; background:linear-gradient(90deg,var(--brand-600),var(--aqua-500)); transition:width .2s ease; }
+.anamnesis-kind { max-width:320px; }
+.anamnesis-step { display:grid; gap:8px; }.anamnesis-step>header { padding:4px 2px 8px; }.anamnesis-step h4,.anamnesis-review h4 { margin:0 0 4px; color:var(--navy); font-size:15px; }.anamnesis-step p,.anamnesis-review p { margin:0; color:var(--muted); font-size:9px; }
+.smart-field { border:1px solid var(--line); border-radius:11px; background:#fff; }.smart-field>summary { min-height:52px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 12px; cursor:pointer; }.smart-field>summary div { display:grid; gap:3px; }.smart-field>summary strong { color:var(--navy); font-size:10px; }.smart-field>summary small,.smart-field>summary>span { color:var(--muted); font-size:8px; }.smart-field>div { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px; border-top:1px solid var(--line); background:var(--surface-muted); }.smart-field label { display:grid; gap:5px; color:#4f6974; font-size:9px; }.smart-field label:has(textarea) { grid-column:1/-1; }.smart-field select,.smart-field textarea { width:100%; border:1px solid var(--line); border-radius:9px; background:#fff; color:var(--ink); font:inherit; }.smart-field select { height:38px; }.smart-field textarea { padding:10px; resize:vertical; }
+.anamnesis-review>header { display:flex; gap:10px; padding:13px; border-radius:11px; background:var(--aqua-50); }.anamnesis-review__sections { display:grid; gap:7px; margin:12px 0; }.anamnesis-review__sections details { border:1px solid var(--line); border-radius:10px; }.anamnesis-review__sections summary { display:flex; justify-content:space-between; padding:11px; color:var(--navy); font-size:10px; font-weight:700; cursor:pointer; }.anamnesis-review__sections summary span { color:var(--muted); font-size:8px; font-weight:500; }.anamnesis-review__sections details>div { padding:10px 12px; border-top:1px solid var(--line); }.anamnesis-review__sections strong { color:var(--navy); font-size:9px; }.anamnesis-review__sections small { color:var(--brand-600); font-size:8px; }.private-notes span { display:flex; align-items:center; gap:6px; }
+.anamnesis-wizard__footer { position:sticky; bottom:-20px; z-index:3; display:flex; justify-content:space-between; gap:10px; padding:12px 0 0; border-top:1px solid var(--line); background:#fff; }.anamnesis-wizard__footer>div { display:flex; gap:7px; }
+
 /* Tablet and mobile are intentionally recomposed rather than scaled down. */
 @media (max-width: 1200px) {
   .sidebar { width: 232px; }
@@ -373,6 +434,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .calendar-grid--week .time-row { grid-template-columns: 52px repeat(7, minmax(102px, 1fr)); }
   .calendar-grid--week > .time-calendar__header,
   .calendar-grid--week .time-calendar__body { min-width: 766px; }
+  .patient-journey { grid-template-columns: minmax(0, 1fr) 38px; }
+  .patient-journey__patient { min-width: 0; }
+  .patient-journey nav { grid-row: 2; grid-column: 1 / -1; }
+  .patient-journey__switch { display: none; }
 }
 
 @media (max-width: 640px) {
@@ -400,6 +465,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .mobile-day-list { padding: 15px; }
   .homologation-controls, .homologation-details, .homologation-report { padding: 15px; }
   .modal { border-radius: 18px; }
+  .patient-journey { margin-bottom: 14px; padding: 9px; }
+  .patient-journey nav { margin-inline: -2px; padding-bottom: 2px; }
+  .patient-journey nav a { min-height: 40px; padding-inline: 10px; }
+  .patient-toolbar .search-field, .patient-toolbar .select-field, .patient-toolbar .clear-filters { width: 100%; flex-basis: auto; }
+  .appointment-item { min-width: 0; }
+  .smart-anamnesis__header { align-items:stretch; flex-direction:column; padding:16px; }.smart-anamnesis__header>div:last-child { display:grid; grid-template-columns:1fr 1fr; }.smart-anamnesis__overview { grid-template-columns:1fr; padding:10px 16px; }.smart-anamnesis__overview>div,.smart-anamnesis__overview>div:first-child { padding:10px 0; border-top:1px solid var(--line); border-left:0; }.smart-anamnesis__overview>div:first-child { border-top:0; }.anamnesis-history article { grid-template-columns:1fr auto; padding:9px 0; }.anamnesis-history article>span { grid-column:1; }.anamnesis-progress { grid-template-columns:1fr auto; }.anamnesis-progress__track { grid-row:2; grid-column:1/-1; }.smart-field>summary { align-items:flex-start; flex-direction:column; }.smart-field>div { grid-template-columns:1fr; }.smart-field label:has(textarea) { grid-column:auto; }.anamnesis-wizard__footer { align-items:stretch; flex-direction:column; }.anamnesis-wizard__footer>div { display:grid; grid-template-columns:1fr 1fr; }.anamnesis-wizard__footer .button { width:100%; }
 }
 
 @media (max-width: 400px) {

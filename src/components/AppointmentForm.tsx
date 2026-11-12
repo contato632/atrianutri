@@ -14,15 +14,16 @@ type Props = {
   appointment?: Appointment
   initialDate: string
   initialTime: string
+  initialPatientId?: string
   professionalId?: string
   onClose: () => void
   onSave: (input: AppointmentInput, scope: AppointmentChangeScope) => Promise<void>
   onCancelAppointment?: (scope: AppointmentChangeScope) => Promise<void>
 }
 
-export function AppointmentForm({ workspace, appointment, initialDate, initialTime, professionalId, onClose, onSave, onCancelAppointment }: Props) {
+export function AppointmentForm({ workspace, appointment, initialDate, initialTime, initialPatientId, professionalId, onClose, onSave, onCancelAppointment }: Props) {
   const [category, setCategory] = useState<AppointmentCategory>(appointment?.category ?? 'nutrition-consultation')
-  const [patientId, setPatientId] = useState(appointment?.patientId ?? '')
+  const [patientId, setPatientId] = useState(appointment?.patientId ?? initialPatientId ?? '')
   const [serviceId, setServiceId] = useState(appointment?.serviceId ?? '')
   const [scope, setScope] = useState<AppointmentChangeScope>('occurrence')
   const [recurrence, setRecurrence] = useState<RecurrenceFrequency>(appointment?.recurrenceFrequency ?? 'none')
@@ -31,6 +32,8 @@ export function AppointmentForm({ workspace, appointment, initialDate, initialTi
   const [duration, setDuration] = useState(appointment ? Math.round((new Date(appointment.endsAt).getTime() - new Date(appointment.startsAt).getTime()) / 60_000) : 60)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [dirty, setDirty] = useState(false)
+  const requestClose = () => { if (!dirty || window.confirm('Descartar as alterações deste agendamento?')) onClose() }
   const service = workspace.professionalServices.find((item) => item.id === serviceId)
   const requiresPatient = category === 'nutrition-consultation' || category === 'follow-up'
   const patient = workspace.patients.find((item) => item.id === patientId)
@@ -81,8 +84,8 @@ export function AppointmentForm({ workspace, appointment, initialDate, initialTi
     } finally { setBusy(false) }
   }
 
-  return <form className="appointment-form" onSubmit={submit}>
-    <header><div><span className="eyebrow">{appointment ? 'Editar compromisso' : 'Novo compromisso'}</span><h2>{appointment ? 'Configurar agendamento' : 'Adicionar à agenda'}</h2></div><button type="button" aria-label="Fechar" className="icon-button" onClick={onClose}>×</button></header>
+  return <form className="appointment-form" onSubmit={submit} onChange={() => setDirty(true)}>
+    <header><div><span className="eyebrow">{appointment ? 'Editar compromisso' : 'Novo compromisso'}</span><h2>{appointment ? 'Configurar agendamento' : 'Adicionar à agenda'}</h2></div><button type="button" aria-label="Fechar" className="icon-button" onClick={requestClose}>×</button></header>
     <div className="appointment-form__body">
       <label className="field"><span>Categoria</span><select value={category} onChange={(event) => setCategory(event.target.value as AppointmentCategory)}>{categories.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       {requiresPatient && <><label className="field"><span>Paciente</span><select value={patientId} onChange={(event) => setPatientId(event.target.value)} required><option value="">Selecionar paciente</option>{workspace.patients.map((item) => <option value={item.id} key={item.id}>{item.fullName}</option>)}</select></label>{patient && <p className="appointment-patient"><strong>{patient.fullName}</strong><span>{patient.email} · {patient.phone}</span></p>}<label className="field"><span>Serviço</span><select value={serviceId} onChange={(event) => selectService(event.target.value)}><option value="">Sem serviço associado</option>{activeServices.map((item) => <option value={item.id} key={item.id}>{item.name} · {item.defaultDurationMinutes} min</option>)}</select></label></>}
@@ -95,6 +98,6 @@ export function AppointmentForm({ workspace, appointment, initialDate, initialTi
       {appointment?.seriesId && <fieldset className="scope-choice"><legend>Aplicar alteração</legend><label><input type="radio" checked={scope === 'occurrence'} onChange={() => setScope('occurrence')} />Somente esta ocorrência</label><label><input type="radio" checked={scope === 'series'} onChange={() => setScope('series')} />Toda a série</label></fieldset>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <footer>{appointment && onCancelAppointment ? <button type="button" className="button button--danger" disabled={busy} onClick={async () => { if (!window.confirm(scope === 'series' ? 'Cancelar todas as ocorrências desta série?' : 'Cancelar somente esta ocorrência?')) return; setBusy(true); try { await onCancelAppointment(scope) } catch (reason) { setError(reason instanceof Error ? reason.message : 'Falha ao cancelar.') } finally { setBusy(false) } }}><Trash2 size={15} />Cancelar</button> : <span />}<div><button type="button" className="button button--ghost" onClick={onClose}>Fechar</button><button className="button button--primary" disabled={busy || conflict}>{busy ? <LoaderCircle className="spin" /> : <Save size={15} />}Salvar</button></div></footer>
+    <footer>{appointment && onCancelAppointment ? <button type="button" className="button button--danger" disabled={busy} onClick={async () => { if (!window.confirm(scope === 'series' ? 'Cancelar todas as ocorrências desta série?' : 'Cancelar somente esta ocorrência?')) return; setBusy(true); try { await onCancelAppointment(scope) } catch (reason) { setError(reason instanceof Error ? reason.message : 'Falha ao cancelar.') } finally { setBusy(false) } }}><Trash2 size={15} />Cancelar</button> : <span />}<div><button type="button" className="button button--ghost" onClick={requestClose}>Fechar</button><button className="button button--primary" disabled={busy || conflict}>{busy ? <LoaderCircle className="spin" /> : <Save size={15} />}Salvar</button></div></footer>
   </form>
 }
