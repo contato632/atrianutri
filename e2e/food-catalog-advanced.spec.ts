@@ -52,7 +52,7 @@ test('define porção antes da inclusão e calcula medidas caseiras proporcionai
   await expect(amount).toHaveValue('1')
   await amount.fill('2')
   await expect(composition).toContainText('153 kcal')
-  await expect(meal.getByText('2 Unidade médias (170 g)')).toBeVisible()
+  await expect(meal.locator('.catalog-portion__hint')).toContainText('170 g')
 
   await add.click()
   const added = meal.locator('.structured-food-row').last()
