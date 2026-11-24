@@ -486,3 +486,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Planejamento alimentar: porção escolhida antes da inclusão no catálogo. */
+.catalog-portion{display:grid;gap:10px;margin:0 10px 10px;padding:12px;border:1px solid #d8e8ea;border-radius:10px;background:#f3f9f9}
+.catalog-portion__header{display:grid;gap:3px}
+.catalog-portion__header strong{font-size:11px;color:var(--navy)}
+.catalog-portion__header span{font-size:10px;line-height:1.5;color:#607986}
+.catalog-portion__fields{display:grid;grid-template-columns:minmax(105px,1fr) minmax(160px,2fr);gap:10px}
+.catalog-portion__fields label{display:grid;gap:5px;min-width:0}
+.catalog-portion__fields label>span{font-size:10px;font-weight:600;color:#506d7b}
+.catalog-portion__fields input,.catalog-portion__fields select{width:100%;min-width:0;height:38px;padding:0 10px;border:1px solid #cddfe5;border-radius:8px;background:#fff;color:#26465a;font-size:12px}
+.catalog-portion__fields input:focus-visible,.catalog-portion__fields select:focus-visible{outline:2px solid #2d8793;outline-offset:2px}
+.catalog-portion__hint{margin:0;font-size:10px;font-weight:600;line-height:1.5;color:#286c70}
+.catalog-portion__hint--error{color:#a14444}
+.catalog-confirm .button:disabled{cursor:not-allowed;opacity:.5}
+@media(max-width:600px){.catalog-portion__fields{grid-template-columns:1fr}.catalog-portion{padding:10px}}
